@@ -136,10 +136,10 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     //adw_about_dialog_set_body(about, "Hierbei handelt es sich um ein klitzekleines Testprojekt."); //nicht in meiner adw Version?
     adw_about_dialog_set_application_name (about, "OLED-Saver");
     adw_about_dialog_set_version (about, "0.9.1");
-    adw_about_dialog_set_developer_name (about, "basti_kmr & toq");
+    adw_about_dialog_set_developer_name (about, "toq");
     adw_about_dialog_set_website (about, "https://github.com/super-toq");
 
-    /* Lizenz – MIT wird als „custom“ angegeben */
+    /* Lizenz – BSD2 wird als „custom“ angegeben */
     adw_about_dialog_set_license_type (about, GTK_LICENSE_CUSTOM);
     adw_about_dialog_set_license (about,
         "BSD 2-Clause License\n\n"
@@ -268,7 +268,7 @@ static void on_activate (AdwApplication *app, gpointer)
 
     /* --- Popover‑Menu im Hamburger --- */
     GMenu *menu = g_menu_new ();
-    g_menu_append (menu, _("Über Basti's OLED-Saver"), "app.show-about");
+    g_menu_append (menu, _("Über OLED-Saver"), "app.show-about");
     GtkPopoverMenu *popover = GTK_POPOVER_MENU (
         gtk_popover_menu_new_from_model (G_MENU_MODEL (menu)));
     gtk_menu_button_set_popover (menu_btn, GTK_WIDGET (popover));
