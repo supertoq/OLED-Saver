@@ -1,0 +1,9 @@
+[Application]
+name=free.basti.oledsaver
+
+[Context]
+shared=ipc;network
+socket=x11;wayland;pulseaudio
+system-bus=true
+session-bus=true
+
