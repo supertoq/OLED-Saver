@@ -1,5 +1,10 @@
 [Desktop Entry]
 Name=OLEDSaver
+Comment=Little prevent standby tool
 Exec=free.basti.oledsaver
 Icon=/free/basti/oledsaver/icon
+Terminal=false
 Type=Application
+Categories=Utility;GTK;
+Keywords=standby;Screensaver;
+StartupNotify=true

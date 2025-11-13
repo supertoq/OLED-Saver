@@ -15,12 +15,12 @@
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 0.9.1  free.basti.oledsaver (Festerbasis von finden v0.6.1)
+ * Version 0.9.2  free.basti.oledsaver (Fensterbasis von finden v0.6.1)
  */
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
-#include "icon-gresource.h" //h zu binäres Icon
+#include "icon-gresource.h" //h zu binäres Icons
 #include <sys/wait.h>
 #include <signal.h>
 #include <dbus/dbus.h>
@@ -45,7 +45,7 @@ typedef enum {
 } DesktopEnvironment;
 static DesktopEnvironment detect_desktop_environment(void) {
     const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    g_print("Kommuniziere mit %s \n", desktop);
+    g_print("Kommuniziere mit %s-System: \n", desktop);
     if (!desktop) {
         desktop = g_getenv("DESKTOP_SESSION");
     }
@@ -148,7 +148,7 @@ static void start_inhibit_only_standby_prevention(void) {
             execlp("/usr/bin/systemd-inhibit",     // Kindprozess startet systemd-inhibit sleep infinity
                    "systemd-inhibit",
                    "--mode=block",
-                   "--what=idle:sleep:shutdown:handle-lid-switch",
+                   "--what=idle:sleep:shutdown:handle-lid-switch:handle-suspend-key",
                    "--who=OLED-Saver",
                    "--why=Prevent Standby and Screen Lock",
                    "sleep", "infinity", 
@@ -213,7 +213,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
 
     /* Argumente für Inhibit vorbereiten */
     dbus_message_iter_init_append(msg, &args);
-    const char *what = "sleep:idle:shutdown:handle-lid-switch";
+    const char *what = "sleep:idle:shutdown:handle-lid-switch:handle-suspend-key";
     const char *who = "OLED-Saver";
     const char *why = "Prevent Standby and Screen Lock";
     const char *mode = "block";
@@ -364,8 +364,8 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     AdwAboutDialog *about = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
     //adw_about_dialog_set_body(about, "Hierbei handelt es sich um ein klitzekleines Testprojekt."); //nicht in meiner adw Version?
     adw_about_dialog_set_application_name (about, "OLED-Saver");
-    adw_about_dialog_set_version (about, "0.9.1");
-    adw_about_dialog_set_developer_name (about, "toq");
+    adw_about_dialog_set_version (about, "0.9.2");
+    adw_about_dialog_set_developer_name (about, "Build for Basti™");
     adw_about_dialog_set_website (about, "https://github.com/super-toq");
 
     /* Lizenz – BSD2 wird als „custom“ angegeben */
@@ -399,7 +399,8 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
         "https://www.svgrepo.com/page/licensing/#CC%20Attribution \n");
 
 //    adw_about_dialog_set_translator_credits (about, "toq: deutsch\n toq: englisch");
-//    adw_about_dialog_set_application_icon (about, "free.basti.oledsaver");   //IconName
+//    adw_about_dialog_set_application_icon (about, "/free/basti/oledsaver/icon1");   //IconName
+// Setze das Anwendungssymbol von GResource
 
     /* Dialog modal zum aktiven Fenster zeigen */
     GtkWindow *parent = gtk_application_get_active_window (GTK_APPLICATION (app));
@@ -528,15 +529,15 @@ static void on_activate (AdwApplication *app, gpointer)
 
     // Icon erstellen weather-clear-night-large
 //    GtkWidget *icon = gtk_image_new_from_icon_name("weather-clear-night-large");
-    GtkWidget *icon = gtk_image_new_from_resource("/free/basti/oledsaver/icon"); //alias in xml !
+    GtkWidget *icon = gtk_image_new_from_resource("/free/basti/oledsaver/icon2"); //alias in xml !
     // Icon horizontal zentrieren
     gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
     gtk_image_set_pixel_size(GTK_IMAGE(icon), 128);
     gtk_box_append(GTK_BOX(main_box), icon);
 
     /* ----- Text-Label 2 erstellen ----- */
-    GtkWidget *label2 = gtk_label_new(_("[Methode: DBus]\n"
-                                        "Bei Fullscreen kein Standby.\n"));
+    GtkWidget *label2 = gtk_label_new(_("                            \n"
+                                        "Bei Blackscreen kein Standby.\n"));
     gtk_widget_set_halign (label2, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (label2, GTK_ALIGN_CENTER);
     gtk_box_append (main_box, label2);
@@ -593,6 +594,11 @@ static void on_activate (AdwApplication *app, gpointer)
     adw_toolbar_view_set_content(toolbar_view, GTK_WIDGET(main_box));
 
     /* ----- System-Icon ----- */
+    
+
+    /* --- Dark-Mode erzwingen --- */
+    AdwStyleManager *style_manager = adw_style_manager_get_default();
+    adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
 
     /* ----- Fenster desktop‑konform anzeigen ----- */
     gtk_window_present(GTK_WINDOW(win));
