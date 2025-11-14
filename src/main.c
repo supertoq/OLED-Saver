@@ -1,32 +1,30 @@
-/* FINDEN is part of a learning project;
+/* OLED-Saver is part of my learning projects;
  * toq 2025  LICENSE: BSD 2-Clause "Simplified"
  *
  *
- * FULL:
+ * komplett:
  * gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o oledsaver main.c free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1)
 
  *
- * Mit ICON:
- * gcc $(pkg-config --cflags gtk4 libadwaita-1) -o oledsaver main.c free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1)
+ * 
  *
- * Ohne ICON:
- * gcc $(pkg-config --cflags gtk4 libadwaita-1) -o oledsaver main.c $(pkg-config --libs gtk4 libadwaita-1)
  *
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 0.9.2  free.basti.oledsaver (Fensterbasis von finden v0.6.1)
+ * Version 0.9.3  free.basti.oledsaver (Fensterbasis von 'finden v0.6.1')
  */
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
-#include "icon-gresource.h" //h zu binäres Icons
-#include <sys/wait.h>
-#include <signal.h>
-#include <dbus/dbus.h>
-#include <locale.h> 
-#include <glib/gi18n.h>
-//#include "finden.gresource.h"   /* enthält resources_get_resource() */
+#include "icon-gresource.h" // binäre Icons
+#include <sys/wait.h>       // für waitpid()
+#include <signal.h>         // für signal(),SIGTERM,SIGINT,kill()
+#include <dbus/dbus.h>      // für DBusConnection,DBusMessage,dbus_bus_get(),dbus_message_new_method_call;
+#include <locale.h>         // für setlocale(LC_ALL, "")
+#include <glib/gi18n.h>     // für _();
+#include <unistd.h>         // für fork(),sleep();
+
 
 /* globale Referenz, wird beim UI-Aufbau gesetzt */
 int inhibit_fd = -1;                          //Dateiskriptor
@@ -45,7 +43,7 @@ typedef enum {
 } DesktopEnvironment;
 static DesktopEnvironment detect_desktop_environment(void) {
     const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    g_print("Kommuniziere mit %s-System: \n", desktop);
+    g_print(_("Kommuniziere mit %s-System: \n"), desktop);
     if (!desktop) {
         desktop = g_getenv("DESKTOP_SESSION");
     }
@@ -107,7 +105,7 @@ g_print("[Case] Wähle entsprechende Funktion ...  \n"); // testen
 
 static void restore_standby_settings_universal(void) {
     DesktopEnvironment desktop = detect_desktop_environment();
-g_print("Zustand widerhergestellt. \n");
+g_print(_("Zustand wiederhergestellt. \n"));
     switch (desktop) {
         case DESKTOP_GNOME:
             system("gsettings set org.gnome.desktop.session idle-delay 300");
@@ -144,7 +142,7 @@ static void start_inhibit_only_standby_prevention(void) {
     if (inhibit_pid == 0) {               // Prozess starten wenn nicht schon einer läuft! 
         pid_t pid = fork();               // fork erzeugt Kindprozess, wenn inhibit_pid nicht 1 ist!
         if (pid == 0) {
-            g_print(_("[i] Kommuniziere mit Systemd \n"));
+            g_print(_("[s-i] Kommuniziere mit Systemd \n"));
             execlp("/usr/bin/systemd-inhibit",     // Kindprozess startet systemd-inhibit sleep infinity
                    "systemd-inhibit",
                    "--mode=block",
@@ -156,9 +154,9 @@ static void start_inhibit_only_standby_prevention(void) {
             _exit(1); // falls execlp fehlschlägt
         } else if (pid > 0) {
             inhibit_pid = pid;
-            g_print(_("[i] Prozess (PID: %d) läuft bereits\n"), inhibit_pid);
+            g_print(_("[s-i] Prozess (PID: %d) läuft bereits\n"), inhibit_pid);
         } else {
-            g_warning(_("Fehler beim Erstellen des Kindprozesses!\n"));
+            g_warning(_("[s-i] Fehler beim Erstellen des Kindprozesses!\n"));
         }
     }
     system("gsettings set org.gnome.desktop.session idle-delay 0");
@@ -167,7 +165,7 @@ static void start_inhibit_only_standby_prevention(void) {
 /* -- [Methode 1] -- BEENDEN des systemd-inhibit (only) Prozesses beim App-Ende -- */
 static void stop_inhibit_only_standby_prevention(void) {
     if (inhibit_pid > 0) {
-        g_print(_("Kill Prozess (PID: %d )\n"), (int)inhibit_pid);
+        g_print(_("[s-i] Kill Prozess (PID: %d )\n"), (int)inhibit_pid);
         if (kill(inhibit_pid, SIGTERM) == -1) {
             g_warning("Fehler beim Beenden von PID %d\n", (int)inhibit_pid);
         } else {
@@ -193,7 +191,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     /* Verbindung zum Systembus herstellen */
     conn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
     if (dbus_error_is_set(&err)) {
-        g_warning(_("[i+d] DBus Verbindungsfehler: %s \n"), err.message);
+        g_warning(_("[d] DBus Verbindungsfehler: %s \n"), err.message);
         dbus_error_free(&err);
         return;
     }
@@ -207,7 +205,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     );
 
     if (msg == NULL) {
-        g_warning(_("[i+d] DBus Nachrichtenerstellung fehlgeschlagen \n"));
+        g_warning(_("[d] DBus Nachrichtenerstellung fehlgeschlagen \n"));
         return;
     }
 
@@ -225,9 +223,9 @@ static void start_inhibit_dbus_standby_prevention(void) {
 
     /* Methode senden und Antwort empfangen */
     reply = dbus_connection_send_with_reply_and_block(conn, msg, -1, &err);
-    g_print(_("Kommuniziere inhibit über DBus. \n"));
+    g_print(_("[d] Kommuniziere inhibit über DBus. \n"));
     if (dbus_error_is_set(&err)) {
-        g_warning(_("[i+d] DBus Methodenaufruf-Fehler: %s \n"), err.message);
+        g_warning(_("[d] DBus Methodenaufruf-Fehler: %s \n"), err.message);
         dbus_message_unref(msg);
         dbus_error_free(&err);
         return;
@@ -236,7 +234,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     /* Dateideskriptor aus der Antwort extrahieren */
     if (!dbus_message_iter_init(reply, &args) ||
         dbus_message_iter_get_arg_type(&args) != DBUS_TYPE_UNIX_FD) {
-        g_warning(_("[i+d] Ungültige DBus-Antwort \n"));
+        g_warning(_("[d] Ungültige DBus-Antwort \n"));
         dbus_message_unref(msg);
         dbus_message_unref(reply);
         return;
@@ -251,7 +249,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     dbus_message_unref(msg);
     dbus_message_unref(reply);
 
-    g_print(_("[i+d] Methoden zur Standby-Verhinderung aktiviert\n"));
+    g_print(_("[d] Methoden zur Standby-Verhinderung aktiviert\n"));
 }
 
 /* -- [Methode 2] -- BEENDEN von Inhibit aus "systemd-inhibit und dbus" --- */
@@ -259,7 +257,7 @@ static void stop_inhibit_dbus_standby_prevention(void) {
     if (inhibit_fd > 0) {
         close(inhibit_fd);
         inhibit_fd = -1;
-        g_print(_("[i+d] Methoden zur Standby-Verhinderung beendet\n"));
+        g_print(_("[d] Methoden zur Standby-Verhinderung beendet\n"));
     }
 }
 
@@ -298,8 +296,8 @@ static void stop_standby_prevention(void) {
 /* ---------------------------------------------------------------------------- */
 
 
-/* --- Mausbewegung beendet Fullscreen Fenster, 
-  reaktiviert von enable_mouse_exit_after_delay() */
+/* ----- Mausbewegung beendet Fullscreen Fenster, 
+  reaktiviert von enable_mouse_exit_after_delay() ----- */
 static gboolean
 on_mouse_move_exit_fullscreen(GtkEventControllerMotion *controller,
                               gdouble x, gdouble y,
@@ -326,7 +324,7 @@ static void on_alert_dialog_response (AdwAlertDialog *dialog,
     else
         g_print ("Dialog btn - cancel\n");
 
-    /* **Wichtig:** hier kein g_object_unref(dialog) ! */
+    /* Hinweis, hier kein g_object_unref(dialog) ! */
 }
 
 /* ----- Callback Alert-Dialog anzeigen (generisch) ----- */
@@ -356,7 +354,7 @@ show_alert_dialog (GtkWindow   *parent,
     adw_dialog_present (ADW_DIALOG (dialog), GTK_WIDGET (parent));
 }
 
-/* ---- Callback: About-Dialog öffnen ----- */
+/* ----- Callback: About-Dialog öffnen ------ */
 static void show_about (GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     AdwApplication *app = ADW_APPLICATION (user_data);
@@ -364,7 +362,7 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     AdwAboutDialog *about = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
     //adw_about_dialog_set_body(about, "Hierbei handelt es sich um ein klitzekleines Testprojekt."); //nicht in meiner adw Version?
     adw_about_dialog_set_application_name (about, "OLED-Saver");
-    adw_about_dialog_set_version (about, "0.9.2");
+    adw_about_dialog_set_version (about, "0.9.3");
     adw_about_dialog_set_developer_name (about, "Build for Basti™");
     adw_about_dialog_set_website (about, "https://github.com/super-toq");
 
@@ -406,13 +404,14 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     GtkWindow *parent = gtk_application_get_active_window (GTK_APPLICATION (app));
     adw_dialog_present (ADW_DIALOG (about), GTK_WIDGET (parent));
 }
+
 /* ----- Callback Beenden-Button ----- */
 static void on_quitbutton_clicked (GtkButton *button, gpointer user_data)
 {
     g_application_quit (G_APPLICATION (user_data));
 }
 
-/* Motion-Handler, Wartezeit */
+/* Motion-Handler, Wartezeit, für Fullscreen-Button */
 static gboolean
 enable_mouse_exit_after_delay(gpointer user_data)
 {
@@ -424,7 +423,7 @@ enable_mouse_exit_after_delay(gpointer user_data)
     return G_SOURCE_REMOVE;  // Timer nur einmal ausführen
 }
 
-/* Fullscreen-Button */
+/* ----- Callback zu Fullscreen-Button ----- */
 static void
 on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
 {
@@ -444,7 +443,7 @@ on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
 
     /* Vollbild-Fenster */
     GtkWidget *fullscreen_window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(fullscreen_window), "Vollbild");
+    gtk_window_set_title(GTK_WINDOW(fullscreen_window), _("Vollbild"));
     gtk_widget_add_css_class(fullscreen_window, "fullscreen-window");
     gtk_window_fullscreen(GTK_WINDOW(fullscreen_window));
     gtk_window_present(GTK_WINDOW(fullscreen_window));
@@ -486,7 +485,7 @@ static void on_activate (AdwApplication *app, gpointer)
     AdwHeaderBar *header = ADW_HEADER_BAR (adw_header_bar_new());
     /* Label mit Pango‑Markup erzeugen */
     GtkLabel *title_label = GTK_LABEL(gtk_label_new (NULL));
-    gtk_label_set_markup (title_label, "<b>Basti's OLED-Saver</b>");                  // Fenstertitel in Markup
+    gtk_label_set_markup (title_label, "<b>Basti's OLED-Saver</b>");      // Fenstertitel in Markup
     gtk_label_set_use_markup (title_label, TRUE);                        //Markup‑Parsing aktivieren
     adw_header_bar_set_title_widget (header, GTK_WIDGET (title_label)); //Label als Title‑Widget einsetzen
     adw_toolbar_view_add_top_bar (toolbar_view, GTK_WIDGET (header));  //Header‑Bar zur Toolbar‑View hinzuf
@@ -510,7 +509,7 @@ static void on_activate (AdwApplication *app, gpointer)
     g_action_map_add_action_entries (G_ACTION_MAP (app), entries, G_N_ELEMENTS (entries), app);
 
 
-    /* ---- Haupt‑Box erstellen ----------------------------------------------------------- */
+    /* ---- Haupt-Box erstellen ----------------------------------------------------------- */
     GtkBox *main_box = GTK_BOX (gtk_box_new (GTK_ORIENTATION_VERTICAL, 12));
     gtk_widget_set_margin_top    (GTK_WIDGET (main_box), 20);
     gtk_widget_set_margin_bottom (GTK_WIDGET (main_box), 20);
@@ -520,14 +519,14 @@ static void on_activate (AdwApplication *app, gpointer)
     gtk_widget_set_vexpand (GTK_WIDGET (main_box), TRUE);
 
     /* ----- Text-Label 1 erstellen  ----- */
-    GtkWidget *label1 = gtk_label_new(_("Blackscreen statt Burnin! \n"));
+    GtkWidget *label1 = gtk_label_new(_("Blackscreen statt Burn-in! \n"));
     gtk_widget_set_halign (label1, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (label1, GTK_ALIGN_CENTER);
 
-    /* ----- Label als Inhalt zur hinzufügen ----- */ 
+    /* ----- Label1 als Inhalt zur hinzufügen ----- */ 
     gtk_box_append (main_box, label1);
 
-    // Icon erstellen weather-clear-night-large
+    /*  Internes Icon anzeigen lassen */
 //    GtkWidget *icon = gtk_image_new_from_icon_name("weather-clear-night-large");
     GtkWidget *icon = gtk_image_new_from_resource("/free/basti/oledsaver/icon2"); //alias in xml !
     // Icon horizontal zentrieren
@@ -537,16 +536,17 @@ static void on_activate (AdwApplication *app, gpointer)
 
     /* ----- Text-Label 2 erstellen ----- */
     GtkWidget *label2 = gtk_label_new(_("                            \n"
-                                        "Bei Blackscreen kein Standby.\n"));
+                                        "Standby wird bei Aktivierung verhindert.\n"));
     gtk_widget_set_halign (label2, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (label2, GTK_ALIGN_CENTER);
     gtk_box_append (main_box, label2);
-    /* ----- Checkbutton oberhalb der Schaltfläche (horizontal) ----- */
+
+    /* ----- Checkbox oberhalb der Schaltfläche (horizontal) ----- */
     static GtkWidget *chbx_box   = NULL;   /* Gtk-Box */
 
      /* Kontrollkästchen/Checkbox mit Namen "..." */
     if (!fullscr_check) {
-        fullscr_check = GTK_CHECK_BUTTON (gtk_check_button_new_with_label ("checkbox"));
+        fullscr_check = GTK_CHECK_BUTTON (gtk_check_button_new_with_label (_("Checkbox")));
         gtk_check_button_set_active (fullscr_check, FALSE);
     }
 
@@ -563,10 +563,10 @@ static void on_activate (AdwApplication *app, gpointer)
     /* button_box erstellen, wo Schaltfläche hineinkommen */
     GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
 
-    /* Das bereits vorbereitete horizontale Box‑Widget in die vertikale Haupt‑Box einfügen */
+    /* Das bereits vorbereitete horizontale Box-Widget in die vertikale Haupt-Box einfügen */
     gtk_box_append (main_box, chbx_box);
 
-    /* --- Schaltfläche-Fullscreen:  ------------------------------------------------- */
+    /* ----- Schaltfläche-Fullscreen erzeugen ----- */
     GtkWidget *setfullscreen_button = gtk_button_new_with_label (_("Blackscreen"));
     gtk_widget_set_halign (setfullscreen_button, GTK_ALIGN_CENTER);
     g_signal_connect (setfullscreen_button, "clicked",
@@ -576,7 +576,7 @@ static void on_activate (AdwApplication *app, gpointer)
     GtkWidget *quit_button = gtk_button_new_with_label(_(" Beenden "));
     gtk_widget_set_halign(quit_button, GTK_ALIGN_CENTER);
 
-    /* ----- Callback auslösen ----- */
+    /* ----- Beendenbutton signal verbinden ----- */
     g_signal_connect(quit_button, "clicked", G_CALLBACK(on_quitbutton_clicked), app);
 
     /* ----- Schaltflächen der button_box hinzufügen ----- */
@@ -584,13 +584,13 @@ static void on_activate (AdwApplication *app, gpointer)
     gtk_box_append(GTK_BOX(button_box), setfullscreen_button);
 
 
-    /* ----- button_box der Hauptbox (box) hinzufügen ----- */
+    /* ----- button_box der Haupt-Box (box) hinzufügen ----- */
     gtk_widget_set_valign(button_box, GTK_ALIGN_END);    // Ausrichtung nach unten
     gtk_widget_set_halign(button_box, GTK_ALIGN_CENTER); // Ausrichtung mittig
     gtk_box_append(GTK_BOX(main_box), button_box);
     gtk_widget_set_vexpand(button_box, TRUE);            // Platz über Buttons ausdehnen
     
-    /* -----  Box zur ToolbarView hinzufügen ------------ */
+    /* -----  Haupt-Box zur ToolbarView hinzufügen ------------ */
     adw_toolbar_view_set_content(toolbar_view, GTK_WIDGET(main_box));
 
     /* ----- System-Icon ----- */
@@ -615,23 +615,15 @@ int main (int argc, char **argv)
     const char *locale_path = NULL;
     const char *flatpak_id = getenv("FLATPAK_ID"); //flatpak string free.toq.finden anderenfalls NULL !
 
-    /* Resource‑Bundle (....gresource) registrieren um den Inhalt verfügbar zu machen */
+    /* Resource‑Bundle (....g_resource) registrieren um den Inhalt verfügbar zu machen */
     g_resources_register (resources_get_resource ()); // reicht für Icon innerhalb der App
 
-    /*  Icon aus GResource für AnwendungsIcon laden */
-/*    GError *error = NULL;
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_resource("/free/basti/oledsaver/icon", &error);
-    if (error != NULL) {
-        g_print("Fehler beim Laden des Icons: %s\n", error->message);
-        g_error_free(error);
-    pixbuf = NULL;
-     }
-*/    
+
 
     /* ----- Erstelle den Pfad zu den locale-Dateien ----------------------------------- */
     setlocale(LC_ALL, "");
     textdomain("oledsaver");
-    bind_textdomain_codeset("oledsaver", "UTF-8"); // Basisverzeichnis für Übersetzungen
+    bind_textdomain_codeset("oledsaver", "UTF-8");    // Basisverzeichnis für Übersetzungen
     if (flatpak_id != NULL && flatpak_id[0] != '\0')  // Wenn ungleich NULL:
     {
         locale_path = "/app/share/locale"; // Flatpakumgebung /app/share/locale
@@ -641,7 +633,8 @@ int main (int argc, char **argv)
     bindtextdomain("oledsaver", locale_path);
 //    g_print (_("Lokalisierung in: %s \n"), locale_path); // testen
 
-    g_autoptr (AdwApplication) app =                        // Instanz erstellen + App-ID + Default-Flags;
+
+    g_autoptr (AdwApplication) app =      // Instanz erstellen + App-ID + Default-Flags;
         adw_application_new ("free.basti.oledsaver", G_APPLICATION_DEFAULT_FLAGS);
 
     g_signal_connect (app, "activate", G_CALLBACK (on_activate), NULL); // Signal mit on_activate verbinden

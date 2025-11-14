@@ -2,7 +2,7 @@
 Name=OLEDSaver
 Comment=Little prevent standby tool
 Exec=free.basti.oledsaver
-Icon=/free/basti/oledsaver/icon
+Icon=free.basti.oledsaver
 Terminal=false
 Type=Application
 Categories=Utility;GTK;

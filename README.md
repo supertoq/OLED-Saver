@@ -9,7 +9,7 @@ This app was built at the request of a user.
   
   
 **Please note**:
-***This code is part of a learning project. Use of the code and execution of the application is at your own risk; 
+***This code is part of my learning project. Use of the code and execution of the application is at your own risk; 
 I accept no liability!***
 
 
