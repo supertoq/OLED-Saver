@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>free.basti.oledsaver</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>BSD-2-Clause</project_license>
+  <name>OLED Saver</name>
+  
+  <summary>Screen saver for OLED displays</summary>
+  
+  <description>
+    <p>OLED-Saver is a small tool that prevents your device from entering standby mode. It displays a completely black screen to protect the OLED display from potential burn-in effects. The application takes into account the desktop environments Gnome, KDE, and XFCE, and adjusts the energy-saving behavior accordingly.</p>
+  </description>
+  
+  <screenshots>
+    <screenshot type="default" style="dark">
+      <caption>App dark screenshot</caption>
+      <image>https://raw.githubusercontent.com/super-toq/OLED-Saver/packaging/refs/heads/flatpak/oledsaver_preview_img1.png</image>
+    </screenshot>
+  </screenshots> 
+  
+  <url type="homepage">https://github.com/super-toq/OLED-Saver</url>
+
+  <content_rating type="oars-1.1" />
+  
+  <launchable type="desktop-id">free.basti.oledsaver.desktop</launchable>
+  
+  <developer id="free.basti.oledsaver">
+    <name>super-toq</name>
+  </developer>
+  
+  <provides>
+    <binary>oled-saver</binary>
+  </provides>
+  
+  <releases>
+    <release version="0.9.6" date="2025-11-18"/>
+     <description translate="no">
+        <ul>
+          <li>First Flatpak Release</li>
+        </ul>
+      </description>
+  </releases>
+  
+  <categories>
+    <category>Utility</category>
+    <category>Graphics</category>
+    <category>System</category>
+  </categories>
+</component>
+

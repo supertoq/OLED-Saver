@@ -6,137 +6,134 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: OLED-Saver\n"
+"Project-Id-Version: 2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-14 08:21+0100\n"
+"POT-Creation-Date: 2025-11-18 17:36+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <toq@mailbox.org>\n"
+"Last-Translator: super-toq <toq@mailbox.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: german/english US \n"
+"Language: german/english en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:46
+#: main.c:45
 #, c-format
-msgid "Kommuniziere mit %s-System: \n"
-msgstr "Communicate with %s system: \n"
+msgid "Prüfe %s-Desktop...\n"
+msgstr "Check %s desktop...\n"
 
-#: main.c:75
-msgid "[Case GNOME] gsettings ... \n"
-msgstr "[Case GNOME] gsettings ... \n"
+#: main.c:74
+msgid "[1Cg] Energiespar-Verhalten von Gnome vorbereiten...\n"
+msgstr "[1Cg] Prepare energy-saving behavior of gnomes...\n"
 
-#: main.c:82
-msgid "[Case KDE] qdbus ... \n"
-msgstr "[Case KDE] qdbus ... \n"
+#: main.c:81
+msgid "[1Ck] Energiespar-Verhalten von KDE vorbereiten...\n"
+msgstr "[1Ck] Prepare energy-saving behavior of KDE...\n"
 
-#: main.c:88
-msgid "[Case XFCE] xfconf-query ... \n"
-msgstr "[Case XFCE] xfconf-query ... \n"
+#: main.c:87
+msgid "[1Cx] Energiespar-Verhalten von XFCE4 vorbereiten...\n"
+msgstr "[1Cx] Prepare energy-saving behavior of XFCE4...\n"
 
-#: main.c:94
-msgid "[Case KDE] gsettings ... \n"
-msgstr "[Case KDE] gsettings ... \n"
+#: main.c:93
+msgid "[1Cm] Energiespar-Verhalten von MATE vorbereiten...\n"
+msgstr "[1Cm] Prepare energy-saving behavior of MATE...\n"
 
-#: main.c:100
-msgid "[Case Fallback] systemd ... \n"
-msgstr "[Case Fallback] systemd ... \n"
+#: main.c:99
+msgid "[1Cf] Fallback, keine Anpassung des Energiespar-Verhaltens.\n"
+msgstr "[1Cf] Fallback, no adjustment of energy-saving behavior.\n"
 
 #: main.c:108
-msgid "Zustand wiederhergestellt \n"
-msgstr "State restored \n"
+#, fuzzy
+msgid "[1CReset] Zustand wird wiederhergestellt.\n"
+msgstr "[1CReset] State is being restored.\n"
 
-#: main.c:145
-msgid "[s-i] Kommuniziere mit Systemd \n"
-msgstr "[s-i] Communicate with Systemd \n"
+#: main.c:155
+#, fuzzy, c-format
+msgid "[2D] DBus Verbindungsfehler: %s .\n"
+msgstr "[2D] DBus connection error: %s .\n"
 
-#: main.c:157
-#, c-format
-msgid "[s-i] Prozess (PID: %d) läuft bereits\n"
-msgstr "[s-i] Process (PID: %d) is already running\n"
+#: main.c:169
+#, fuzzy
+msgid "[2D] DBus Nachrichtenerstellung fehlgeschlagen.\n"
+msgstr "[2D] DBus message creation failed.\n"
 
-#: main.c:159
-msgid "[s-i] Fehler beim Erstellen des Kindprozesses!\n"
-msgstr "[s-i] Error creating child process!\n"
+#: main.c:174
+msgid "[2Di] DBus Aufruf vorbereiten...\n"
+msgstr "[2Di] Preparing DBus call...\n"
 
-#: main.c:168
-#, c-format
-msgid "[s-i] Kill Prozess (PID: %d )\n"
-msgstr "[s-i] Kill Prozess (PID: %d )\n"
+#: main.c:188
+msgid "[2Di] DBus Aufruf senden...\n"
+msgstr "[2Di] Sending DBus call...\n"
 
-#: main.c:194
-#, c-format
-msgid "[d] DBus Verbindungsfehler: %s \n"
-msgstr "[d] DBus connection error: %s \n"
+#: main.c:190
+#, fuzzy, c-format
+msgid "[2Di] DBus Methodenaufruf-Fehler: %s .\n"
+msgstr "[2Di] DBus connection error: %s .\n"
 
-#: main.c:208
-msgid "[d] DBus Nachrichtenerstellung fehlgeschlagen \n"
-msgstr "[d] DBus message creation failed \n"
+#: main.c:199
+#, fuzzy
+msgid "[2Di] Ungültige DBus-Antwort.\n"
+msgstr "[2Di] Invalid DBus response.\n"
 
-#: main.c:226
-msgid "[d] Kommuniziere inhibit über DBus. \n"
-msgstr "[d] Communicate inhibit over DBus. \n"
+#: main.c:214
+#, fuzzy
+msgid "[2D_] Standby-Verhinderung aktiviert.\n"
+msgstr "[2D_] Preventing standby activated.\n"
 
-#: main.c:228
-#, c-format
-msgid "[d] DBus Methodenaufruf-Fehler: %s \n"
-msgstr ""
+#: main.c:222
+#, fuzzy
+msgid "[2D_] Standby-Verhinderung beendet.\n"
+msgstr "[2D_] Preventing standby ended.\n"
 
-#: main.c:237
-msgid "[d] Ungültige DBus-Antwort \n"
-msgstr "[d] Invalid DBus response \n"
+#: main.c:270
+#, fuzzy
+msgid "Motionkontroller hat Fullscreen unterbrochen.\n"
+msgstr "Motion controller interrupted fullscreen.\n"
 
-#: main.c:252
-msgid "[d] Methoden zur Standby-Verhinderung aktiviert\n"
-msgstr "[d] Methods to prevent standby activated\n"
-
-#: main.c:260
-msgid "[d] Methoden zur Standby-Verhinderung beendet\n"
-msgstr "[d] Methods to prevent standby terminated\n"
-
-#: main.c:309
-msgid "Motionkontroller hat Fullscreen unterbrochen \n"
-msgstr "Motion controller interrupted fullscreen \n"
-
-#: main.c:337
+#: main.c:298
 msgid "Kein gültiges Elternfenster für Alert-Dialog \n"
-msgstr "No valid parent window for alert dialog! \n"
+msgstr "No valid parent window for alert dialog!\n"
 
-#: main.c:345
+#: main.c:306
 msgid "Abbrechen"
 msgstr "Cancel"
 
-#: main.c:346
+#: main.c:307
 msgid "OK"
 msgstr "OK"
 
-#: main.c:446
+#: main.c:374
+msgid "Anweisung zum Beenden erhalten...\n"
+msgstr "Received instruction to terminate..."
+
+#: main.c:412
 msgid "Vollbild"
 msgstr "Fullscreen"
 
-#: main.c:500
+#: main.c:466
 msgid "Über OLED-Saver"
 msgstr "About OLED-Saver"
 
-#: main.c:522
+#: main.c:488
 msgid "Blackscreen statt Burn-in! \n"
 msgstr "Black screen instead of burn-in!\n"
 
-#: main.c:538
+#: main.c:510
 msgid ""
 "                            \n"
 "Standby wird bei Aktivierung verhindert.\n"
-msgstr "                            \n"
+msgstr ""
+"                            \n"
 "Standby is prevented by activation.\n"
 
-#: main.c:549
-msgid "Checkbox"
-msgstr "Placeholder"
+#: main.c:520
+msgid "Platzhalter1"
+msgstr "placeholder1"
 
-#: main.c:570
+#: main.c:543
 msgid "Blackscreen"
 msgstr "Blackscreen"
 
-#: main.c:576
+#: main.c:554
 msgid " Beenden "
 msgstr "  Quit  "

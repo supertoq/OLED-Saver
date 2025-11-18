@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OLED Saver
+Comment=Screen saver for OLED displays
+Exec=oled-saver
+Icon=free.basti.oledsaver
+Categories=Utility;
+StartupWMClass=OLED-Saver
+X-Flatpak=free.basti.oledsaver

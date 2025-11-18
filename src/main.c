@@ -11,7 +11,7 @@
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 0.9.4  free.basti.oledsaver (ursprüngliche Fensterbasis von 'finden v0.6.1')
+ * Version 0.9.6-flatpak  free.basti.oledsaver
  */
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -42,7 +42,7 @@ typedef enum {
 } DesktopEnvironment;
 static DesktopEnvironment detect_desktop_environment(void) {
     const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    g_print(_("Kommuniziere mit %s-System: \n"), desktop);
+    g_print(_("Prüfe %s-Desktop...\n"), desktop);
     if (!desktop) {
         desktop = g_getenv("DESKTOP_SESSION");
     }
@@ -67,48 +67,51 @@ static DesktopEnvironment detect_desktop_environment(void) {
 
 static void prevent_standby_universal(void) {
     DesktopEnvironment desktop = detect_desktop_environment();
-g_print("[Case] Wähle entsprechende Funktion ...  \n"); // testen
+g_print("Wähle entsprechende Funktion aus.\n"); // testen
     switch (desktop) {
         case DESKTOP_GNOME:
             // GNOME-spezifische Methode
-            g_print(_("[Case GNOME] gsettings ... \n"));
+            g_print(_("[1Cg] Energiespar-Verhalten von Gnome vorbereiten...\n"));
             system("gsettings set org.gnome.desktop.session idle-delay 0");
             system("gsettings set org.gnome.desktop.screensaver lock-enabled false");
             break;
 
         case DESKTOP_KDE:
             // KDE-spezifische Methode
-            g_print(_("[Case KDE] qdbus ... \n"));
+            g_print(_("[1Ck] Energiespar-Verhalten von KDE vorbereiten...\n"));
             system("qdbus org.kde.PowerManagement /org/kde/PowerManagement/PolicyAgent org.kde.PowerManagement.PolicyAgent.SuppressScreenSaver");
             break;
 
         case DESKTOP_XFCE:
             // XFCE-spezifische Methode
-            g_print(_("[Case XFCE] xfconf-query ... \n"));
+            g_print(_("[1Cx] Energiespar-Verhalten von XFCE4 vorbereiten...\n"));
             system("xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/blank-on-ac -s 0");
             break;
 
         case DESKTOP_MATE:
             // MATE-spezifische Methode
-            g_print(_("[Case KDE] gsettings ... \n"));
+            g_print(_("[1Cm] Energiespar-Verhalten von MATE vorbereiten...\n"));
             system("gsettings set org.mate.power-manager sleep-display-ac 0");
             break;
 
         default:
             // Fallback: Systemd-Inhibit
-            g_print(_("[Case Fallback] systemd ... \n"));
-            system("systemd-inhibit --mode=block --what=idle:sleep:shutdown:handle-lid-switch sleep infinity");
+            g_print(_("[1Cf] Fallback, keine Anpassung des Energiespar-Verhaltens.\n"));
+            // Fallback in Flatpak-Version deaktiviert.   
+            //system("systemd-inhibit --mode=block --what=idle:sleep:shutdown:handle-lid-switch sleep infinity");
             break;
     }
 }
 
 static void restore_standby_settings_universal(void) {
     DesktopEnvironment desktop = detect_desktop_environment();
-g_print(_("Zustand wiederhergestellt. \n"));
+g_print(_("[1CReset] Zustand wird wiederhergestellt.\n"));
     switch (desktop) {
         case DESKTOP_GNOME:
-            system("gsettings set org.gnome.desktop.session idle-delay 300");
-            system("gsettings set org.gnome.desktop.screensaver lock-enabled true");
+             system("gsettings reset org.gnome.desktop.session idle-delay");
+             system("gsettings reset org.gnome.desktop.screensaver lock-enabled");
+            //system("gsettings set org.gnome.desktop.session idle-delay 300");
+            //system("gsettings set org.gnome.desktop.screensaver lock-enabled true");
             break;
 
         case DESKTOP_KDE:
@@ -120,7 +123,8 @@ g_print(_("Zustand wiederhergestellt. \n"));
             break;
 
         case DESKTOP_MATE:
-            system("gsettings set org.mate.power-manager sleep-display-ac 10");
+            system("gsettings reset org.mate.power-manager sleep-display-ac");
+            //system("gsettings set org.mate.power-manager sleep-display-ac 10");
             break;
 
         default:
@@ -129,54 +133,12 @@ g_print(_("Zustand wiederhergestellt. \n"));
 }
 
 
-
 /* ---------------- Teil 2 ------------------ */
 
+// Methode 1 in Flatpak-Version entfernt!
 
 
-/* -- [Methode1] -- STARTEN von "systemd-inhibit only" im Hintergrund -- */
-
-/* Hindergrundprozess wird gestartet um Standby zu vermeiden */
-static void start_inhibit_only_standby_prevention(void) {
-    if (inhibit_pid == 0) {               // Prozess starten wenn nicht schon einer läuft! 
-        pid_t pid = fork();               // fork erzeugt Kindprozess, wenn inhibit_pid nicht 1 ist!
-        if (pid == 0) {
-            g_print(_("[s-i] Kommuniziere mit Systemd \n"));
-            execlp("/usr/bin/systemd-inhibit",     // Kindprozess startet systemd-inhibit sleep infinity
-                   "systemd-inhibit",
-                   "--mode=block",
-                   "--what=idle:sleep:shutdown:handle-lid-switch:handle-suspend-key",
-                   "--who=OLED-Saver",
-                   "--why=Prevent Standby and Screen Lock",
-                   "sleep", "infinity", 
-                   NULL);
-            _exit(1); // falls execlp fehlschlägt
-        } else if (pid > 0) {
-            inhibit_pid = pid;
-            g_print(_("[s-i] Prozess (PID: %d) läuft bereits\n"), inhibit_pid);
-        } else {
-            g_warning(_("[s-i] Fehler beim Erstellen des Kindprozesses!\n"));
-        }
-    }
-    system("gsettings set org.gnome.desktop.session idle-delay 0");
-}
-
-/* -- [Methode 1] -- BEENDEN des systemd-inhibit (only) Prozesses beim App-Ende -- */
-static void stop_inhibit_only_standby_prevention(void) {
-    if (inhibit_pid > 0) {
-        g_print(_("[s-i] Kill Prozess (PID: %d )\n"), (int)inhibit_pid);
-        if (kill(inhibit_pid, SIGTERM) == -1) {
-            g_warning("Fehler beim Beenden von PID %d\n", (int)inhibit_pid);
-        } else {
-        int status;
-        waitpid(inhibit_pid, &status, 0); // Kind reapen
-        }
-        inhibit_pid = 0;
-    }
-}
-
-
-/* -- [Methode 2] -- STARTEN systemd-inhibit und dbus im Hintergrund:  ----- */
+/* -- [Methode 2] -- STARTEN systemd-inhibit über dbus ----- */
 static void start_inhibit_dbus_standby_prevention(void) {
     DBusConnection *conn;
     DBusMessage *msg, *reply;
@@ -190,7 +152,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     /* Verbindung zum Systembus herstellen */
     conn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
     if (dbus_error_is_set(&err)) {
-        g_warning(_("[d] DBus Verbindungsfehler: %s \n"), err.message);
+        g_warning(_("[2D] DBus Verbindungsfehler: %s .\n"), err.message);
         dbus_error_free(&err);
         return;
     }
@@ -204,11 +166,12 @@ static void start_inhibit_dbus_standby_prevention(void) {
     );
 
     if (msg == NULL) {
-        g_warning(_("[d] DBus Nachrichtenerstellung fehlgeschlagen \n"));
+        g_warning(_("[2D] DBus Nachrichtenerstellung fehlgeschlagen.\n"));
         return;
     }
 
     /* Argumente für Inhibit vorbereiten */
+    g_print(_("[2Di] DBus Aufruf vorbereiten...\n"));
     dbus_message_iter_init_append(msg, &args);
     const char *what = "sleep:idle:shutdown:handle-lid-switch:handle-suspend-key";
     const char *who = "OLED-Saver";
@@ -222,9 +185,9 @@ static void start_inhibit_dbus_standby_prevention(void) {
 
     /* Methode senden und Antwort empfangen */
     reply = dbus_connection_send_with_reply_and_block(conn, msg, -1, &err);
-    g_print(_("[d] Kommuniziere inhibit über DBus. \n"));
+    g_print(_("[2Di] DBus Aufruf senden...\n"));
     if (dbus_error_is_set(&err)) {
-        g_warning(_("[d] DBus Methodenaufruf-Fehler: %s \n"), err.message);
+        g_warning(_("[2Di] DBus Methodenaufruf-Fehler: %s .\n"), err.message);
         dbus_message_unref(msg);
         dbus_error_free(&err);
         return;
@@ -233,7 +196,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     /* Dateideskriptor aus der Antwort extrahieren */
     if (!dbus_message_iter_init(reply, &args) ||
         dbus_message_iter_get_arg_type(&args) != DBUS_TYPE_UNIX_FD) {
-        g_warning(_("[d] Ungültige DBus-Antwort \n"));
+        g_warning(_("[2Di] Ungültige DBus-Antwort.\n"));
         dbus_message_unref(msg);
         dbus_message_unref(reply);
         return;
@@ -248,7 +211,7 @@ static void start_inhibit_dbus_standby_prevention(void) {
     dbus_message_unref(msg);
     dbus_message_unref(reply);
 
-    g_print(_("[d] Methoden zur Standby-Verhinderung aktiviert\n"));
+    g_print(_("[2D_] Standby-Verhinderung aktiviert.\n"));
 }
 
 /* -- [Methode 2] -- BEENDEN von Inhibit aus "systemd-inhibit und dbus" --- */
@@ -256,7 +219,7 @@ static void stop_inhibit_dbus_standby_prevention(void) {
     if (inhibit_fd > 0) {
         close(inhibit_fd);
         inhibit_fd = -1;
-        g_print(_("[d] Methoden zur Standby-Verhinderung beendet\n"));
+        g_print(_("[2D_] Standby-Verhinderung beendet.\n"));
     }
 }
 
@@ -272,7 +235,6 @@ static void cleanup_and_restore_universal(int signum) {
     exit(0);
 }
 
-// In Ihrer Hauptfunktion oder Initialisierung
 static void setup_signal_handlers_universal(void) {
     signal(SIGINT, cleanup_and_restore_universal);
     signal(SIGTERM, cleanup_and_restore_universal);
@@ -305,7 +267,7 @@ on_mouse_move_exit_fullscreen(GtkEventControllerMotion *controller,
     GtkWindow *window = GTK_WINDOW(user_data);
 
     g_idle_add((GSourceFunc)gtk_window_destroy, window);
-        g_print (_("Motionkontroller hat Fullscreen unterbrochen \n"));
+        g_print (_("Motionkontroller hat Fullscreen unterbrochen.\n"));
     g_signal_handlers_disconnect_by_func(controller,
                                          on_mouse_move_exit_fullscreen,
                                          user_data);
@@ -361,7 +323,7 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     AdwAboutDialog *about = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
     //adw_about_dialog_set_body(about, "Hierbei handelt es sich um ein klitzekleines Testprojekt."); //nicht in meiner adw Version?
     adw_about_dialog_set_application_name (about, "OLED-Saver");
-    adw_about_dialog_set_version (about, "0.9.4");
+    adw_about_dialog_set_version (about, "0.9.6-flatpak");
     adw_about_dialog_set_developer_name (about, "Built for Basti™");
     adw_about_dialog_set_website (about, "https://github.com/super-toq");
 
@@ -409,7 +371,8 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
 static void on_quitbutton_clicked (GtkButton *button, gpointer user_data)
 {
     //g_application_quit (G_APPLICATION (user_data));
-GtkWindow *win = GTK_WINDOW(user_data);
+g_print(_("Anweisung zum Beenden erhalten...\n"));
+GtkWindow *win = GTK_WINDOW(user_data); 
 gtk_window_destroy(win);
 }
 
@@ -631,7 +594,6 @@ int main (int argc, char **argv)
 
     /* Resource‑Bundle (....g_resource) registrieren um den Inhalt verfügbar zu machen */
     g_resources_register (resources_get_resource ()); // reicht für Icon innerhalb der App
-
 
 
     /* ----- Erstelle den Pfad zu den locale-Dateien ----------------------------------- */
