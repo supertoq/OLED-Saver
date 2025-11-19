@@ -7,8 +7,44 @@ A black full screen is displayed to protect the OLED from burn-in.
 This app was created at the request of a user.  
   
   
-### Installation:
-Please use the install and uninstall scripts included in the package to install or remove the app.
+### Installation:  
+The quickest way to install OLED‑Saver is to download the application from the [Releases](https://github.com/super-toq/OLED-Saver/releases) page.  
+Installation proceeds as follows:  
+```
+flatpak install --user /your/path/to/free.basti.oledsaver  
+```  
+  
+You can also build the application yourself from the transparent source code; here’s one way using Flatpak Builder.
+  
+### Building and Installing with Flatpak Builder.  
+
+#### Preparation and Dev Depentencies:
+  
+#### Ubuntu/Debian  
+`sudo apt update && sudo apt install flatpak flatpak-builder`  
+  
+#### Fedora  
+`sudo dnf install flatpak flatpak-builder`  
+  
+#### Arch
+`sudo pacman -S flatpak flatpak-builder`  
+
+##### Add Flathub repository (if not already added): 
+`flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`  
+  
+### Clone repository:  
+`git clone https://github.com/super-toq/OLED-Saver.git`  
+  
+### Build and install OLED-Saver:
+`cd OLED-Saver`  
+`flatpak-builder --user --install --force-clean build-dir free.basti.oledsaver.yml`  
+  
+### Run the OLED-Saver:  
+`flatpak run free.basti.oledsaver`  
+  
+### Uninstall the application:  
+`flatpak removefree.basti.oledsaver`  
+
   
 **Please note**:
 ***This code is part of my learning project.  
