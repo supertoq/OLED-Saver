@@ -1,4 +1,4 @@
-## OLED-Saver
+## Basti's OLED-Saver
 Basti's OLED-Saver is a small tool that tries to prevent the device from standby.  
 A black full screen is displayed to protect the OLED from burn-in.  
 
@@ -11,7 +11,9 @@ This app was created at the request of a user.
 The quickest way to install OLED‑Saver is to download the application from the [Releases](https://github.com/super-toq/OLED-Saver/releases) page.  
 Installation proceeds as follows:  
 ```
-flatpak install --user /your/path/to/free.basti.oledsaver  
+cd ~/Downloads  
+
+flatpak install --user oledsaver.flatpak  
 ```  
   
 You can also build the application yourself from the transparent source code; here’s one way using Flatpak Builder.
@@ -43,7 +45,7 @@ You can also build the application yourself from the transparent source code; he
 `flatpak run free.basti.oledsaver`  
   
 ### Uninstall the application:  
-`flatpak removefree.basti.oledsaver`  
+`flatpak uninstall -y free.basti.oledsaver`  
 
   
 **Please note**:
