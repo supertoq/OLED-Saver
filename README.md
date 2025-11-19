@@ -12,7 +12,8 @@ The quickest way to install OLED‑Saver is to download the application from the
 Installation proceeds as follows:  
 ```
 cd ~/Downloads  
-
+```  
+```
 flatpak install --user oledsaver.flatpak  
 ```  
   
