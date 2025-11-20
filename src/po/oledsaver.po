@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 2\n"
+"Project-Id-Version: 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-18 17:36+0100\n"
+"POT-Creation-Date: 2025-11-20 16:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: super-toq <toq@mailbox.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,123 +17,41 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:45
-#, c-format
-msgid "Prüfe %s-Desktop...\n"
-msgstr "Check %s desktop...\n"
-
-#: main.c:74
-msgid "[1Cg] Energiespar-Verhalten von Gnome vorbereiten...\n"
-msgstr "[1Cg] Prepare energy-saving behavior of gnomes...\n"
-
-#: main.c:81
-msgid "[1Ck] Energiespar-Verhalten von KDE vorbereiten...\n"
-msgstr "[1Ck] Prepare energy-saving behavior of KDE...\n"
-
-#: main.c:87
-msgid "[1Cx] Energiespar-Verhalten von XFCE4 vorbereiten...\n"
-msgstr "[1Cx] Prepare energy-saving behavior of XFCE4...\n"
-
-#: main.c:93
-msgid "[1Cm] Energiespar-Verhalten von MATE vorbereiten...\n"
-msgstr "[1Cm] Prepare energy-saving behavior of MATE...\n"
-
-#: main.c:99
-msgid "[1Cf] Fallback, keine Anpassung des Energiespar-Verhaltens.\n"
-msgstr "[1Cf] Fallback, no adjustment of energy-saving behavior.\n"
-
-#: main.c:108
-#, fuzzy
-msgid "[1CReset] Zustand wird wiederhergestellt.\n"
-msgstr "[1CReset] State is being restored.\n"
-
-#: main.c:155
-#, fuzzy, c-format
-msgid "[2D] DBus Verbindungsfehler: %s .\n"
-msgstr "[2D] DBus connection error: %s .\n"
-
-#: main.c:169
-#, fuzzy
-msgid "[2D] DBus Nachrichtenerstellung fehlgeschlagen.\n"
-msgstr "[2D] DBus message creation failed.\n"
-
-#: main.c:174
-msgid "[2Di] DBus Aufruf vorbereiten...\n"
-msgstr "[2Di] Preparing DBus call...\n"
-
-#: main.c:188
-msgid "[2Di] DBus Aufruf senden...\n"
-msgstr "[2Di] Sending DBus call...\n"
-
-#: main.c:190
-#, fuzzy, c-format
-msgid "[2Di] DBus Methodenaufruf-Fehler: %s .\n"
-msgstr "[2Di] DBus connection error: %s .\n"
-
-#: main.c:199
-#, fuzzy
-msgid "[2Di] Ungültige DBus-Antwort.\n"
-msgstr "[2Di] Invalid DBus response.\n"
-
-#: main.c:214
-#, fuzzy
-msgid "[2D_] Standby-Verhinderung aktiviert.\n"
-msgstr "[2D_] Preventing standby activated.\n"
-
-#: main.c:222
-#, fuzzy
-msgid "[2D_] Standby-Verhinderung beendet.\n"
-msgstr "[2D_] Preventing standby ended.\n"
-
-#: main.c:270
-#, fuzzy
-msgid "Motionkontroller hat Fullscreen unterbrochen.\n"
-msgstr "Motion controller interrupted fullscreen.\n"
-
-#: main.c:298
-msgid "Kein gültiges Elternfenster für Alert-Dialog \n"
-msgstr "No valid parent window for alert dialog!\n"
-
-#: main.c:306
+#: main.c:279
 msgid "Abbrechen"
 msgstr "Cancel"
 
-#: main.c:307
+#: main.c:280
 msgid "OK"
 msgstr "OK"
 
-#: main.c:374
-msgid "Anweisung zum Beenden erhalten...\n"
-msgstr "Received instruction to terminate..."
-
-#: main.c:412
+#: main.c:386
 msgid "Vollbild"
 msgstr "Fullscreen"
 
-#: main.c:466
+#: main.c:442
 msgid "Über OLED-Saver"
 msgstr "About OLED-Saver"
 
-#: main.c:488
+#: main.c:464
 msgid "Blackscreen statt Burn-in! \n"
-msgstr "Black screen instead of burn-in!\n"
+msgstr "Blackscreen instead of burn-in!\n"
 
-#: main.c:510
+#: main.c:480
 msgid ""
 "                            \n"
-"Standby wird bei Aktivierung verhindert.\n"
+"Standby wird verhindert\n"
 msgstr ""
 "                            \n"
-"Standby is prevented by activation.\n"
-
-#: main.c:520
+"Standby is prevented\n"
+#: main.c:500
 msgid "Platzhalter1"
 msgstr "placeholder1"
 
-#: main.c:543
+#: main.c:519
 msgid "Blackscreen"
 msgstr "Blackscreen"
 
-#: main.c:554
+#: main.c:529
 msgid " Beenden "
 msgstr "  Quit  "
