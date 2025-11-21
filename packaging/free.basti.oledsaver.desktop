@@ -2,7 +2,7 @@
 Type=Application
 Name=OLED Saver
 Comment=Screen saver for OLED displays
-Exec=oled-saver
+Exec=bastis-oledsaver
 Icon=free.basti.oledsaver
 Categories=Utility;
 StartupWMClass=OLED-Saver

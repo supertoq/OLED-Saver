@@ -8,13 +8,15 @@
   <summary>Screen saver for OLED displays</summary>
   
   <description>
-    <p>OLED-Saver is a small tool that prevents your device from entering standby mode. It displays a completely black screen to protect the OLED display from potential burn-in effects. The application takes into account the desktop environments Gnome, KDE, and XFCE, and adjusts the energy-saving behavior accordingly.</p>
+    <p>Basti’s OLED-Saver is a small, lightweight Libadwaita tool that keeps your computer and display awake whenever you need it for extended periods. It offers a simple fullscreen blackscreen mode, perfect for devices with OLED panels to avoid unnecessary burn-in.  
+Basti’s OLED-Saver automatically detects your desktop environment and uses the appropriate inhibit mechanisms for GNOME and KDE so standby doesn’t interfere.  
+The goal was to create a clean, straightforward solution — both as a learning project for modern GTK/Adwaita development and to fulfill a user’s request for a practical everyday utility.</p>
   </description>
   
   <screenshots>
     <screenshot type="default" style="dark">
       <caption>App dark screenshot</caption>
-      <image>https://raw.githubusercontent.com/super-toq/OLED-Saver/packaging/refs/heads/flatpak/oledsaver_preview_img1.png</image>
+      <image>https://raw.githubusercontent.com/super-toq/OLED-Saver/packaging/refs/heads/main/oledsaver_preview_img1.png</image>
     </screenshot>
   </screenshots> 
   
@@ -33,10 +35,10 @@
   </provides>
   
   <releases>
-    <release version="0.9.6" date="2025-11-18"/>
-     <description translate="no">
+    <release version="1.0" date="2025-11-21"/>
+     <description translate="en">
         <ul>
-          <li>First Flatpak Release</li>
+          <li>This release marks the first stable version of Basti's OLED-Saver, which is now fully compatible with Flatpak.  </li>
         </ul>
       </description>
   </releases>

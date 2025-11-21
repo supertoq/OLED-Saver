@@ -2,7 +2,7 @@
  * toq 2025  LICENSE: BSD 2-Clause "Simplified"
  *
  *
- * komplett:
+ *
  * gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o oledsaver main.c free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1)
  *
  *
@@ -11,7 +11,7 @@
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 0.9.9-flatpak  free.basti.oledsaver
+ * Version 1.0  free.basti.oledsaver
  */
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -295,7 +295,7 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     /* About‑Dialog anlegen */
     AdwAboutDialog *about = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
     adw_about_dialog_set_application_name (about, "OLED-Saver");
-    adw_about_dialog_set_version (about, "0.9.9-flatpak");
+    adw_about_dialog_set_version (about, "1.0");
     adw_about_dialog_set_developer_name (about, "Built for Basti™");
     adw_about_dialog_set_website (about, "https://github.com/super-toq");
 
@@ -574,17 +574,18 @@ int main (int argc, char **argv)
 
 
     /* ----- Erstelle den Pfad zu den locale-Dateien ----------------------------------- */
-    setlocale(LC_ALL, "");
-    textdomain("oledsaver");
-    bind_textdomain_codeset("oledsaver", "UTF-8");    // Basisverzeichnis für Übersetzungen
+    setlocale(LC_ALL, "");                         // ruft die aktuelle Locale des Prozesses ab
+//    setlocale (LC_ALL, "en_US.UTF-8"); // testen!!
+    textdomain("bastis-oledsaver");                 // legt Text-Domain-Namen fest
+    bind_textdomain_codeset("bastis-oledsaver", "UTF-8");    // legt entspr. Encoding dazu fest
     if (flatpak_id != NULL && flatpak_id[0] != '\0')  // Wenn ungleich NULL:
     {
         locale_path = "/app/share/locale"; // Flatpakumgebung /app/share/locale
     } else {
         locale_path = "/usr/share/locale"; // Native Hostumgebung /usr/share/locale
     }
-    bindtextdomain("oledsaver", locale_path);
-//    g_print("Localization files in: %s \n", locale_path); // testen
+    bindtextdomain("bastis-oledsaver", locale_path);
+    //g_print("Localization files in: %s \n", locale_path); // testen
 
 
     g_autoptr (AdwApplication) app =      // Instanz erstellen + App-ID + Default-Flags;
