@@ -41,7 +41,7 @@ modules:
       - install -D -m 0644 packaging/free.basti.oledsaver.svg /app/share/icons/hicolor/scalable/apps/free.basti.oledsaver.png
       - install -D -m 0644 packaging/free.basti.oledsaver.png /app/share/icons/hicolor/128x128/apps/free.basti.oledsaver.png
       - install -D -m 0644 packaging/free.basti.oledsaver.metainfo.xml /app/share/metainfo/free.basti.oledsaver.metainfo.xml
-      - install -D -m 0644 packaging/oledsaver_preview_img1.png /app/share/screenshots/oledsaver_preview_img1.png
+      - install -D -m 0644 packaging/oledsaver_preview_img1.png /app/share/pixmaps/oledsaver_preview_img1.png
       - install -D -m 0644 _build/share/locale/en_US/LC_MESSAGES/bastis-oledsaver.mo /app/share/locale/en_US/LC_MESSAGES/bastis-oledsaver.mo
 
     sources:

@@ -1,9 +1,15 @@
 [Desktop Entry]
 Type=Application
 Name=OLED Saver
-Comment=Screen saver for OLED displays
-Exec=bastis-oledsaver
+Comment=Small tool to prevent your device from standby
+Comment[de]=Kleines Tool, um zu verhindern, dass Ihr Gerät in den Standby-Modus geht
+Exec=bastis-oledsaver %U
 Icon=free.basti.oledsaver
 Categories=Utility;
 StartupWMClass=OLED-Saver
 X-Flatpak=free.basti.oledsaver
+X-AppStream-Metadata=free.basti.oledsaver.metainfo.xml
+X-AppStream-Screenshot=share/pixmaps/oledsaver_preview_img1.png
+X-KDE-PluginInfo-Name=OLED-Saver
+X-KDE-PluginInfo-Version=1.0.2
+X-KDE-PluginInfo-Category=Utility
