@@ -1,4 +1,4 @@
-/* OLED-Saver is part of my learning projects;
+/* OLED-Saver is part of my learning project;
  * toq 2025  LICENSE: BSD 2-Clause "Simplified"
  *
  *
@@ -11,7 +11,7 @@
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 1.0.2  free.basti.oledsaver
+ * Version 1.0.4  free.basti.oledsaver
  */
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -60,8 +60,8 @@ static void start_gnome_inhibit(void) {
     /* Session-Bus */
     conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
     if (!conn || dbus_error_is_set(&err)) {
-    g_warning("[GNOME] DBus error: %s\n", err.message); dbus_error_free(&err);
-    return; 
+        g_warning("[GNOME] DBus error: %s\n", err.message); dbus_error_free(&err);
+        return; 
     }
 
     /* DBus-Auffruf vorbereiten */
@@ -73,8 +73,8 @@ static void start_gnome_inhibit(void) {
     );
     
     if (!msg) {
-    g_warning("[GNOME] Error creating the DBus message (1)\n");
-    return; }
+        g_warning("[GNOME] Error creating the DBus message (1)\n");
+        return; }
 
     const char *app = "OLED-Saver";
     const char *reason = "Prevent Standby";
@@ -100,7 +100,7 @@ static void start_gnome_inhibit(void) {
        dbus_message_unref(msg); dbus_message_unref(reply); return;
     }
     dbus_message_iter_get_basic(&iter, &gnome_cookie);
-    g_print("[GNOME] Inhibit active, cookie=%u\n", gnome_cookie);
+    g_print("[GNOME] Inhibit active (cookie=%u)\n", gnome_cookie);
     dbus_message_unref(msg);
     dbus_message_unref(reply);
 }
@@ -201,7 +201,7 @@ static void start_system_inhibit(void) {
     }
 
     dbus_message_iter_get_basic(&iter, &system_fd);
-    g_print("[SYSTEM] Inhibit active, fd=%d\n", system_fd);
+    g_print("[SYSTEM] Inhibit active (fd=%d)\n", system_fd);
     /* Aufräumen */
     dbus_message_unref(msg);
     dbus_message_unref(reply);
@@ -210,16 +210,16 @@ static void start_system_inhibit(void) {
 /* ----- Stop System Inhibit ---------------------------------------- */
 static void stop_system_inhibit(void) {
     if (system_fd < 0) return;
-    close(system_fd);
-    system_fd = -1;
-    g_print("[System] Preventing standby has been stopped\n");
+        close(system_fd);
+        system_fd = -1;
+        g_print("[System] Preventing standby has been stopped\n");
 }
 
 /* --- START --- ausgelöst in on_activate --------------------------- */
 static void start_standby_prevention(void) {
     DesktopEnvironment de = detect_desktop();
     if (de == DESKTOP_GNOME) start_gnome_inhibit();
-    start_system_inhibit(); // KDE, XFCE, MATE
+        start_system_inhibit(); // KDE, XFCE, MATE
 }
 
 /* --- STOP --- ausgelöst beim shutdown ----------------------------- */
@@ -260,8 +260,8 @@ on_mouse_move_exit_fullscreen(GtkEventControllerMotion *controller,
 /* ----- Message / Alert-Dialog generisch, 
          show_alert_dialog (parent,*Titel, *Inhalttext) ------------- */
 static void on_alert_dialog_response (AdwAlertDialog *dialog,
-                          const char     *response,
-                          gpointer        user_data)
+                                      const char     *response, 
+                                      gpointer        user_data)
 {
     if (g_strcmp0 (response, "ok") == 0)
         g_print("Dialog btn - ok\n");
@@ -272,10 +272,9 @@ static void on_alert_dialog_response (AdwAlertDialog *dialog,
 }
 
 /* ----- Callback Alert-Dialog anzeigen ----------------------------- */
-static void
-show_alert_dialog (GtkWindow   *parent,
-                   const char  *title,
-                   const char  *body)
+static void show_alert_dialog (GtkWindow   *parent,
+                               const char  *title,
+                               const char  *body)
 {
     if (!parent || !GTK_IS_WINDOW (parent)) {
         g_warning ("No valid parent window for alert dialog \n");
@@ -305,14 +304,14 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
     AdwApplication *app = ADW_APPLICATION (user_data);
     /* About‑Dialog anlegen */
     AdwAboutDialog *about = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
-    adw_about_dialog_set_application_name (about, "OLED-Saver");
-    adw_about_dialog_set_version (about, "1.0.2");
+    adw_about_dialog_set_application_name (about, "OLED Saver");
+    adw_about_dialog_set_version (about, "1.0.4");
     adw_about_dialog_set_developer_name (about, "Built for Basti™");
     adw_about_dialog_set_website (about, "https://github.com/super-toq/OLED-Saver");
     //adw_about_dialog_set_comments(about, " ... ");
 
     /* Lizenz – BSD2 wird als „custom“ angegeben */
-    adw_about_dialog_set_license_type (about, GTK_LICENSE_CUSTOM);
+    adw_about_dialog_set_license_type (about, GTK_LICENSE_BSD);
     adw_about_dialog_set_license (about,
         "BSD 2-Clause License\n\n"
         "Copyright (c) 2025, toq\n"
@@ -335,7 +334,7 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
         "OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\n"
         "Application Icon by SVG. \n"
         "https://www.svgrepo.com \n"
-        "Respect and thanks to SVG for free use. \n"
+        "Thanks to SVG for sharing their free icons, we appreciate your generosity and respect your work.\n"
         "LICENSE for the icon: \n"
         "CC Attribution License \n"
         "Follow the link to view details of the CC Attribution License: \n"
@@ -349,7 +348,7 @@ static void show_about (GSimpleAction *action, GVariant *parameter, gpointer use
 
     /* Dialog innerhalb (modal) des Haupt-Fensters anzeigen */
     GtkWindow *parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(
-    gtk_application_get_active_window(GTK_APPLICATION(app)) )));
+       gtk_application_get_active_window(GTK_APPLICATION(app)) )));
     adw_dialog_present(ADW_DIALOG(about), GTK_WIDGET(parent));
 
 } // Ende About-Dialog
@@ -423,12 +422,32 @@ static void on_quitbutton_clicked (GtkButton *button, gpointer user_data)
 /* ------------------------------------------------------------------ */
 /*       Aktivierungshandler                                          */
 /* ------------------------------------------------------------------ */
-static void on_activate (AdwApplication *app, gpointer)
-{
+static void on_activate(AdwApplication *app, gpointer) {
+    /* ----- CSS-Provider für zusätzliche Anpassungen --------------- */
+
+    // orange=#db9c4a , lightred=#ff8484 , grey=#c0bfbc
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_string(provider,
+                            ".opaque.custom-suggested-action-button1 {"
+                                         "  background-color: #db9c4a;"
+                                                      "  color: black;"
+                                                                    "}"
+        
+                            ".opaque.custom-suggested-action-button2 {"
+                                         "  background-color: #434347;"
+                                                    "  color: #ff8484;"
+                                                                    "}"
+                                                                     );
+
+    gtk_style_context_add_provider_for_display( gdk_display_get_default(),
+    GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+
+
     /* ----- Adwaita-Fenster ---------------------------------------- */
     AdwApplicationWindow *adw_win = ADW_APPLICATION_WINDOW (adw_application_window_new (GTK_APPLICATION (app))); 
 
-    gtk_window_set_title (GTK_WINDOW(adw_win), "OLED-Saver");     // Fenstertitel
+    gtk_window_set_title (GTK_WINDOW(adw_win), "OLED Saver");     // WM-Titel
     gtk_window_set_default_size (GTK_WINDOW(adw_win), 380, 400);  // Standard-Fenstergröße
     gtk_window_set_resizable (GTK_WINDOW (adw_win), FALSE);       // Skalierung nicht erlauben
     gtk_window_present (GTK_WINDOW(adw_win));                     // Fenster anzeigen lassen
@@ -439,11 +458,9 @@ static void on_activate (AdwApplication *app, gpointer)
 
     /* ----- HeaderBar mit TitelWidget ------------------------------ */
     AdwHeaderBar *header = ADW_HEADER_BAR (adw_header_bar_new());
-    /* Label mit Pango‑Markup erzeugen */
-    GtkLabel *title_label = GTK_LABEL(gtk_label_new (NULL));
-    gtk_label_set_markup (title_label, "<b>Basti's OLED-Saver</b>");    // Fenstertitel in Markup
-    gtk_label_set_use_markup (title_label, TRUE);                       // Markup‑Parsing aktivieren
-    adw_header_bar_set_title_widget (header, GTK_WIDGET (title_label)); // Label als Title‑Widget einsetzen
+    GtkWidget * title_label = gtk_label_new ("Basti's OLED Saver");     // Label für Fenstertitel
+    gtk_widget_add_css_class (title_label, "heading");                  // .heading class
+    adw_header_bar_set_title_widget (ADW_HEADER_BAR (header), GTK_WIDGET (title_label)); // Label einsetzen
     adw_toolbar_view_add_top_bar (toolbar_view, GTK_WIDGET (header));   // Header‑Bar zur Toolbar‑View hinzuf
 
     /* --- Hamburger-Button innerhalb der Headerbar ----------------- */
@@ -453,7 +470,7 @@ static void on_activate (AdwApplication *app, gpointer)
 
     /* --- Popover-Menu im Hamburger -------------------------------- */
     GMenu *menu = g_menu_new ();
-    g_menu_append (menu, _("Über OLED-Saver"), "app.show-about");
+    g_menu_append (menu, _(" Über OLED Saver "), "app.show-about");
     GtkPopoverMenu *popover = GTK_POPOVER_MENU (
         gtk_popover_menu_new_from_model (G_MENU_MODEL (menu)));
     gtk_menu_button_set_popover (menu_btn, GTK_WIDGET (popover));
@@ -492,10 +509,10 @@ static void on_activate (AdwApplication *app, gpointer)
     gtk_box_append(GTK_BOX(main_box), icon);
 
     /* ----- Label2 ------------------------------------------------- */
-    GtkWidget *label2 = gtk_label_new(_("                            \n"
-                                        "Standby wird verhindert\n"));
+    GtkWidget *label2 = gtk_label_new(_(" \nStandby wird jetzt blockiert!\n"));
     gtk_widget_set_halign (label2, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (label2, GTK_ALIGN_CENTER);
+    gtk_widget_add_css_class (label2, "warning");
 
     /* ----- Label2-BOX --------------------------------------------- */
     GtkWidget *label2_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
@@ -526,6 +543,9 @@ static void on_activate (AdwApplication *app, gpointer)
     /* ----- Schaltfläche-Fullscreen -------------------------------- */
     GtkWidget *setfullscreen_button = gtk_button_new_with_label (_("Blackscreen"));
     gtk_widget_set_halign (setfullscreen_button, GTK_ALIGN_CENTER);
+    //gtk_widget_add_css_class (setfullscreen_button, "suggested-action");
+    gtk_widget_add_css_class (setfullscreen_button, "custom-suggested-action-button1"); // CSS-Provider...
+    gtk_widget_add_css_class (setfullscreen_button, "opaque"); // durchsichtig machen...
     g_signal_connect (setfullscreen_button, "clicked", G_CALLBACK (on_fullscreen_button_clicked), app);
 
     /* --- Checkbox an Schaltfläche-Fullscreen speichern, damit diese im Callback abrufen werden kann --- */
@@ -534,8 +554,12 @@ static void on_activate (AdwApplication *app, gpointer)
        // Weiter innerhalb "on_fullscreen_button_clicked".
 
     /* ----- Schaltfläche Beenden ----------------------------------- */
-    GtkWidget *quit_button = gtk_button_new_with_label(_(" Beenden "));
+    GtkWidget *quit_button = gtk_button_new_with_label(_("  Beenden  "));
     gtk_widget_set_halign(quit_button, GTK_ALIGN_CENTER);
+    //gtk_widget_add_css_class (quit_button, "raised");
+    gtk_widget_add_css_class (quit_button, "custom-suggested-action-button2"); // CSS-Provider...
+    gtk_widget_add_css_class (quit_button, "opaque"); // durchsichtig,
+    //gtk_widget_add_css_class (quit_button, "destructive-action");
     // Schaltfläche Beenden Signal verbinden:
     g_signal_connect(quit_button, "clicked", G_CALLBACK(on_quitbutton_clicked), adw_win);
     
@@ -577,19 +601,19 @@ int main (int argc, char **argv)
     g_resources_register (resources_get_resource ());
 
 
-    //* ----- Localiziation-Pfad ----- */
-    setlocale(LC_ALL, "");                         // ruft die aktuelle Locale des Prozesses ab
+    //* ----- Localiziation-Pfad ---------------------------------- */
+    setlocale(LC_ALL, "");               // ruft die aktuelle Locale des Prozesses ab
 //    setlocale (LC_ALL, "en_US.UTF-8"); // testen!!
-    textdomain("bastis-oledsaver");                 // legt Text-Domain-Namen fest
-    bind_textdomain_codeset("bastis-oledsaver", "UTF-8");    // legt entspr. Encoding dazu fest
-    if (flatpak_id != NULL && flatpak_id[0] != '\0')  // Wenn ungleich NULL:
+    textdomain("bastis-oledsaver");      // textdomain festlegen
+    bind_textdomain_codeset("bastis-oledsaver", "UTF-8"); 
+    if (flatpak_id != NULL && flatpak_id[0] != '\0')
     {
-        locale_path = "/app/share/locale"; // Flatpakumgebung /app/share/locale
+        locale_path = "/app/share/locale";
     } else {
-        locale_path = "/usr/share/locale"; // Native Hostumgebung /usr/share/locale
+        locale_path = "/usr/share/locale";
     }
     bindtextdomain("bastis-oledsaver", locale_path);
-    //g_print("Localization files in: %s \n", locale_path); // testen
+    //g_print("Localization files in: %s \n", locale_path); // testen!!
 
 
     g_autoptr (AdwApplication) app =      // Instanz erstellen + App-ID + Default-Flags;
