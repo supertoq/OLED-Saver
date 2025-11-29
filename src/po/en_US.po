@@ -6,52 +6,52 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-20 16:04+0100\n"
+"Project-Id-Version: 4\n"
+"Report-Msgid-Bugs-To: toq@mailbox.org\n"
+"POT-Creation-Date: 2025-11-29 12:15+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: super-toq <toq@mailbox.org>\n"
+"Last-Translator: toq <toq@mailbox.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: german/english en_US\n"
+"Language: german/english_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:279
+#: main.c:288
 msgid "Abbrechen"
 msgstr "Cancel"
 
-#: main.c:280
+#: main.c:289
 msgid "OK"
 msgstr "OK"
 
-#: main.c:386
+#: main.c:390
 msgid "Vollbild"
 msgstr "Fullscreen"
 
-#: main.c:442
-msgid "Über OLED-Saver"
-msgstr "About OLED-Saver"
+#: main.c:473
+msgid " Über OLED Saver "
+msgstr " About OLED Saver "
 
-#: main.c:464
+#: main.c:496
 msgid "Blackscreen statt Burn-in! \n"
 msgstr "Blackscreen instead of burn-in!\n"
 
-#: main.c:480
+#: main.c:512
 msgid ""
-"                            \n"
-"Standby wird verhindert\n"
+" \n"
+"Standby wird jetzt blockiert!\n"
 msgstr ""
-"                            \n"
-"Standby is prevented\n"
-#: main.c:500
+" \n"
+"Standby is prevented!\n"
+#: main.c:530
 msgid "Platzhalter1"
 msgstr "placeholder1"
 
-#: main.c:519
+#: main.c:544
 msgid "Blackscreen"
 msgstr "Blackscreen"
 
-#: main.c:529
-msgid " Beenden "
-msgstr "  Quit  "
+#: main.c:557
+msgid "  Beenden  "
+msgstr "   Quit   "

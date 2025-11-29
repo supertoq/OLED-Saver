@@ -429,7 +429,7 @@ static void on_activate(AdwApplication *app, gpointer) {
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
                             ".opaque.custom-suggested-action-button1 {"
-                                         "  background-color: #db9c4a;"
+                                         "  background-color: #c0bfbc;"
                                                       "  color: black;"
                                                                     "}"
         
