@@ -37,12 +37,19 @@ sudo dnf install flatpak flatpak-builder
 sudo pacman -S flatpak flatpak-builder 
 ```  
 
-##### Add Flathub repository (if not already added): 
+##### Add Flathub repository: 
 ```
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 
 ```  
   
-### Clone repository:  
+#### Within Flatpak, the `Gnome SDK 49` is required to build the application: 
+```
+flatpak install org.gnome.Sdk/x86_64/49
+```  
+  
+### Build the application
+  
+####Clone repository:  
 ```
 git clone https://github.com/super-toq/OLED-Saver.git 
 ```  
