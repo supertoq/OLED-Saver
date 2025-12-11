@@ -47,14 +47,13 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 flatpak install org.gnome.Sdk/x86_64/49
 ```  
   
-### Build the application
+### Build and install OLED-Saver:
   
-####Clone repository:  
+#### Clone repository:  
 ```
 git clone https://github.com/super-toq/OLED-Saver.git 
 ```  
   
-### Build and install OLED-Saver:  
 ```
 cd OLED-Saver 
 ```  

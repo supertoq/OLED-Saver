@@ -1,0 +1,7 @@
+.flatpak-builder
+_repo
+_builddir
+_build-dir
+oledsaver.flatpak
+free.basti.oledsaver.flatpak
+src/oledsaver
