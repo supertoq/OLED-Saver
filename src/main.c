@@ -11,7 +11,7 @@
  * Please note:
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  * 
- * Version 1.0.6  free.basti.oledsaver
+ * Version 1.0.6.1  free.basti.oledsaver
  */
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -305,7 +305,7 @@ static void show_about(GSimpleAction *action, GVariant *parameter, gpointer user
     /* About‑Dialog anlegen */
     AdwAboutDialog *about = ADW_ABOUT_DIALOG(adw_about_dialog_new ());
     adw_about_dialog_set_application_name(about, "OLED Saver");
-    adw_about_dialog_set_version(about, "1.0.6");
+    adw_about_dialog_set_version(about, "1.0.6_1");
     adw_about_dialog_set_developer_name(about, "Built for Basti™");
     adw_about_dialog_set_website(about, "https://github.com/super-toq/OLED-Saver");
     //adw_about_dialog_set_comments(about, " ... ");
@@ -332,11 +332,12 @@ static void show_about(GSimpleAction *action, GVariant *parameter, gpointer user
         "CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, "
         "OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE "
         "OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\n"
-        "Application Icon by SVG. \n"
+        "Application Icon by SVG Repo. \n"
         "https://www.svgrepo.com \n"
-        "Thanks to SVG for sharing their free icons, we appreciate your generosity and respect your work.\n"
-        "LICENSE for the icon: \n"
-        "CC Attribution License \n"
+        "Thanks to SVG Repo for sharing their free icons, "
+        "we appreciate your generosity and respect your work.\n"
+        "The icons are licensed under the \n"
+        "Creative Commons Attribution License.\n"
         "Follow the link to view details of the CC Attribution License: \n"
         "https://www.svgrepo.com/page/licensing/#CC%20Attribution \n");
 
@@ -387,7 +388,7 @@ static gboolean keep_window_on_top(gpointer user_data)
 
     
     g_print("keep window top\n");
-// Fenster verstecken
+    // Fenster verstecken
     gtk_widget_hide(GTK_WIDGET(fullscreen_window));
 
     // Fenster erneut anzeigen
@@ -470,7 +471,7 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     // orange=#db9c4a , lightred=#ff8484 , grey=#c0bfbc
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
-                            ".opaque.custom-suggested-action-button1 {"
+                            ".opaque.custom-suggested-action-button1 {" // Blackscreen-btn
                                          "  background-color: #c0bfbc;"
                                                       "  color: black;"
                                                                     "}"
@@ -478,6 +479,12 @@ static void on_activate(AdwApplication *app, gpointer user_data)
                             ".opaque.custom-suggested-action-button2 {"
                                          "  background-color: #434347;"
                                                     "  color: #ff8484;"
+                                                                    "}"
+                            "checkbutton                             {"
+                                                    "  color: #c0bfbc;"
+                                                                    "}"
+                            "label1                                  {"
+                                                    "  color: #c0bfbc;"
                                                                     "}"
                                                                      );
 
