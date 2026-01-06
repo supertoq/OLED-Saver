@@ -5,7 +5,7 @@
  *
  * log_file_init(APP_ID);
  *
- * Version 2026-01-05
+ * Version 2026-01-06
  */
 #include <glib.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@ static void log_handler(const gchar *domain, GLogLevelFlags level, const gchar *
     if (!log_file)
         return;
 
-    const                            char *char_level =     "INFO";
+    const   char                          *char_level =     "INFO";
     if      (level & G_LOG_LEVEL_ERROR)    char_level =    "ERROR";
     else if (level & G_LOG_LEVEL_CRITICAL) char_level = "CRITICAL";
     else if (level & G_LOG_LEVEL_WARNING)  char_level =  "WARNING";
@@ -59,7 +59,7 @@ void log_file_init(const gchar *app_name)
         return;
 
     /* Pfad = ~/.local/state/<app-id>/  oder  ~/.var/app/<app-id>/state/  */
-    gchar *log_dir = g_build_filename(g_get_user_state_dir(), "oledsaver", NULL);
+    gchar *log_dir = g_build_filename(g_get_user_state_dir(), "bastis-oledsaver", NULL);
 
     if (g_mkdir_with_parents(log_dir, 0700) != 0) {
         g_free(log_dir);
@@ -68,7 +68,7 @@ void log_file_init(const gchar *app_name)
 
     /* Log-File, Pfad + Name  */
     // Flatpak zwei Ebenen-Kapselung: ~/.var/app/free.basti.oledsaver/.local/state/free.basti.oledsaver/oledsaver.log
-    gchar *log_path = g_build_filename(log_dir, "oledsaver.log", NULL);
+    gchar *log_path = g_build_filename(log_dir, "debug.log", NULL);
 
     /* Log-File öffnen und Logging anhängen (w=write a=add) */
     log_file = fopen(log_path, "a");
@@ -88,6 +88,7 @@ void log_file_init(const gchar *app_name)
     g_set_print_handler(g_print_to_log);
 }
 
+/* ----- Log Prozess beenden ------------------------------------------------------------- */
 void log_file_shutdown(void)
 {
     if (!log_file)
