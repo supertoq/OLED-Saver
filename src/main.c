@@ -11,10 +11,13 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.1.0"//_2
+#define APP_VERSION    "1.1.2"//_0
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
+/* Fenstergröße Breite, Höche (380, 400) */
+#define WIN_WIDTH      380
+#define WIN_HEIGHT     440
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -38,6 +41,17 @@ typedef enum {
     DESKTOP_XFCE,
     DESKTOP_MATE
 } DesktopEnvironment;
+
+typedef struct {                   // Struktur für Combo_row
+    const char *label;             // Bezeichner der Combo-Optionen
+    int value;
+} PixelOption;
+
+static const PixelOption pixel_options[] = {
+        { " 50 px",  50  },
+        { "100 px", 100 },
+        { "200 px", 200 },
+};
 
 static DesktopEnvironment detect_desktop(void) {
     const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
@@ -443,9 +457,158 @@ static void show_about(GSimpleAction *action, GVariant *parameter, gpointer user
     GtkWindow *parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(
        gtk_application_get_active_window(GTK_APPLICATION(app)) )));
     adw_dialog_present(ADW_DIALOG(about), GTK_WIDGET(parent));
-
 } // Ende About-Dialog
 
+
+/* ----- IndexNr dem Werte aus settings.cfg > mouse_move_limit zuordnen - */
+static guint value_to_combo_index(int value)
+{
+    for (guint i = 0; i < G_N_ELEMENTS(pixel_options); i++) {
+        if (pixel_options[i].value == value)
+            return i;
+    }
+
+    /* Ungültiger Config-Wert wird immer zu Index 0 */
+    g_cfg.mouse_move_limit = pixel_options[0].value;
+    return 0;
+}
+
+/* ----- Wert aus ComboRow einfügen in g_cfg.mouse_move_limit ------- */
+static void on_combo_changed(GObject *obj, GParamSpec *pspec, gpointer user_data)
+{
+    guint idx = adw_combo_row_get_selected(ADW_COMBO_ROW(obj));
+    g_cfg.mouse_move_limit = pixel_options[idx].value;
+    g_print("[%s] [Settings] mouse_move_limit=%dpx\n", time_stamp(), g_cfg.mouse_move_limit);
+
+    /* Wert auch in Settings.cfg speichern */
+    save_config();
+}
+
+/* ----- In Einstellungen: Schalter1-Toggle --------------------------------------------- */
+static void on_settings_use_key_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
+{
+    AdwSwitchRow *use_key_switch_row = ADW_SWITCH_ROW(object);
+    gboolean active = adw_switch_row_get_active(use_key_switch_row);
+    g_cfg.use_key = active;
+    save_config(); // speichern
+    g_print("[%s] [Settings] use_key_switch=%s\n", time_stamp(), g_cfg.use_key ? "true" : "false"); // zum testen !!
+}
+
+/* ----- In Einstellungen: Schalter2-Toggle --------------------------------------------- */
+static void on_settings_log_enable_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
+{
+    AdwSwitchRow *log_enable_switch_row = ADW_SWITCH_ROW(object);
+    gboolean active = adw_switch_row_get_active(log_enable_switch_row);
+    g_cfg.log_enable = active;
+    save_config(); // speichern
+    g_print("[%s] [Settings] log_enable=%s\n", time_stamp(), g_cfg.log_enable ? "true" : "false"); // zum testen !!
+}
+
+/* ----- Einstellungen-Page ------------------------------------------ */
+static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    AdwNavigationView *settings_nav = ADW_NAVIGATION_VIEW(user_data);
+
+    /* ----- ToolbarView für Settings-Seite ----- */
+    AdwToolbarView *settings_toolbar = ADW_TOOLBAR_VIEW(adw_toolbar_view_new());
+
+    /* ----- Headerbar erzeugen ----- */
+    AdwHeaderBar *settings_header = ADW_HEADER_BAR(adw_header_bar_new());
+    GtkWidget *settings_label = gtk_label_new(_("Einstellungen"));
+    gtk_widget_add_css_class(settings_label, "heading");
+    adw_header_bar_set_title_widget(settings_header, settings_label);
+
+    /* ----- Headerbar einfügen ----- */
+    adw_toolbar_view_add_top_bar(settings_toolbar, GTK_WIDGET(settings_header));
+
+    /* ----- Haupt-BOX der Settings-Seite ----- */
+    GtkWidget *settings_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_margin_top(settings_box,    20);   // Rand unterhalb Toolbar
+    gtk_widget_set_margin_bottom(settings_box, 22);   // unterer Rand unteh. der Buttons
+    gtk_widget_set_margin_start(settings_box,  15);   // links
+    gtk_widget_set_margin_end(settings_box,    15);   // rechts
+
+    /* ----- PreferencesGroup erstellen ----- */
+    AdwPreferencesGroup *settings_group = ADW_PREFERENCES_GROUP(adw_preferences_group_new());
+    adw_preferences_group_set_title(settings_group, _("Präferenzoptionen"));
+    //adw_preferences_group_set_description(settings_group, _("Zusatzbeschreibung - Platzhalter"));
+
+    /* ----- AdwSwitchRow1 erzeugen --------- */
+    AdwSwitchRow *switch_row1 = ADW_SWITCH_ROW(adw_switch_row_new());
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(switch_row1), 
+                                                    _("Leertaste verwenden"));
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(switch_row1),
+     _("Verwende die Leertaste anstelle der Maus, um den Blackscreen-Modus zu beenden"));
+    /* Schalter-Aktivierung abhängig von gesetzten g_cfg. -Wert: */
+    adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row1), g_cfg.use_key);
+    gtk_widget_set_sensitive(GTK_WIDGET(switch_row1), TRUE);    //Aktiviert/Deaktiviert
+
+    /* ----- AdwSwitchRow2 erzeugen --------- */
+    AdwSwitchRow *switch_row2 = ADW_SWITCH_ROW(adw_switch_row_new());
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(switch_row2), 
+                                                    _("Debug-Datei erstellen"));
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(switch_row2),
+     _("Protokollausgaben in eine Datei schreiben"));
+    /* Schalter-Aktivierung abhängig von gesetzten g_cfg.miniterm_enable Wert: */
+    adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row2), g_cfg.log_enable);
+    gtk_widget_set_sensitive(GTK_WIDGET(switch_row2), TRUE);    //Aktiviert/Deaktiviert
+
+    /* ----- AdwSwitchRow1 verbinden -------- */
+    g_signal_connect(switch_row1, "notify::active",
+                                  G_CALLBACK( on_settings_use_key_switch_row_toggled),   NULL);
+
+    /* ----- AdwSwitchRow2  verbinden ------- */
+    g_signal_connect(switch_row2, "notify::active", 
+                                  G_CALLBACK(on_settings_log_enable_switch_row_toggled), NULL);
+
+
+    /* ----- Combo Row erstellen ---------------------------------------------- */
+    GtkWidget *combo_row1 = adw_combo_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(combo_row1), 
+                                                    _("Minimalbewegungen zulassen"));
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(combo_row1),
+     _("Mausbewegungsschwelle in Pixeln"));
+
+    /* ----- String_List der verfügbaren Optionen bauen ----- */
+    GtkStringList *string_list = gtk_string_list_new(NULL);
+
+    for (guint i = 0; i < G_N_ELEMENTS(pixel_options); i++) {
+    gtk_string_list_append(string_list, pixel_options[i].label);
+    }
+    adw_combo_row_set_model(ADW_COMBO_ROW(combo_row1), G_LIST_MODEL(string_list));
+    
+    /* ----- Werte auslesen mit  value_to_combo_index() ----- !! */
+   // guint combo_index = value_to_combo_index(g_cfg.mouse_move_limit);
+
+    /* ----- ComboRow-Option per Index setzen ----- !! */ 
+    adw_combo_row_set_selected(ADW_COMBO_ROW(combo_row1),value_to_combo_index(g_cfg.mouse_move_limit));
+
+    /* ----- ComboRow verbinden ----------------------------- */
+    g_signal_connect(combo_row1, "notify::selected", G_CALLBACK(on_combo_changed), NULL);
+    
+    /* ----- Combo Row zur PreferencesGroup hinzufügen ----- */
+    adw_preferences_group_add(settings_group, combo_row1);
+    /* ------------------------------------------------------------- Ende Combo Box */
+
+    /* ----- Rows zur PreferencesGruppe hinzufügen ----- */
+    adw_preferences_group_add(settings_group, GTK_WIDGET(switch_row1));
+    adw_preferences_group_add(settings_group, GTK_WIDGET(switch_row2));
+
+    /* ----- Pref.Gruppe in die Page einbauen ----- */
+    gtk_box_append(GTK_BOX(settings_box), GTK_WIDGET(settings_group));
+
+    /* ----- ToolbarView Inhalt setzen ----- */
+    adw_toolbar_view_set_content(settings_toolbar, settings_box);
+
+    /* ----- NavigationPage anlegen ----- */
+    AdwNavigationPage *settings_page = 
+                      adw_navigation_page_new(GTK_WIDGET(settings_toolbar), _("Einstellungen"));
+    /* ----- Größe nur zum Ausgleichen der Textlänge bei "Große Schrift" ----- */
+    gtk_widget_set_size_request(GTK_WIDGET(settings_page), WIN_WIDTH, WIN_HEIGHT);  // Fenster-Breite u Höche (380, 400)
+
+    /* ----- Page der Settings_nav hinzufügen ----- */
+    adw_navigation_view_push(settings_nav, settings_page);
+}// Ende Einstellungen-Fenster
 
 
 /* ----- Motion-Handler nach Verzögerung hier aktivieren (TARGET) ---- */
@@ -609,38 +772,52 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     AdwApplicationWindow *adw_win = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app))); 
 
     gtk_window_set_title(GTK_WINDOW(adw_win), APP_NAME);     // WM-Titel
-    gtk_window_set_default_size(GTK_WINDOW(adw_win), 380, 400);  // Standard-Fenstergröße
+    gtk_window_set_default_size(GTK_WINDOW(adw_win), WIN_WIDTH, WIN_HEIGHT);  // Standard-Fenstergröße Breite, Höche (380, 400)
     gtk_window_set_resizable(GTK_WINDOW(adw_win), FALSE);       // Skalierung nicht erlauben
 
-    /* ----- ToolbarView (Root-Widget)  ----------------------------- */
+    /* --- Navigation (Root-Widget) --------------------------------- */
+    AdwNavigationView *nav_view = ADW_NAVIGATION_VIEW(adw_navigation_view_new());
+    adw_application_window_set_content(adw_win, GTK_WIDGET(nav_view));
+
+    /* ----- ToolbarView -------------------------------------------- */
     AdwToolbarView *toolbar_view = ADW_TOOLBAR_VIEW(adw_toolbar_view_new());
-    adw_application_window_set_content(adw_win, GTK_WIDGET(toolbar_view));
+// adw_application_window_set_content(adw_win, GTK_WIDGET(toolbar_view));
 
     /* ----- HeaderBar mit TitelWidget ------------------------------ */
     AdwHeaderBar *header = ADW_HEADER_BAR(adw_header_bar_new());
-    GtkWidget * title_label = gtk_label_new("Basti's OLED Saver");     // Label für Fenstertitel
+    GtkWidget *title_label = gtk_label_new("Basti's OLED Saver");      // Label für Fenstertitel
     gtk_widget_add_css_class(title_label, "heading");                  // .heading class
     adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), GTK_WIDGET(title_label)); // Label einsetzen
     adw_toolbar_view_add_top_bar(toolbar_view, GTK_WIDGET(header));   // Header‑Bar zur Toolbar‑View hinzuf
 
+    /* --- Nav_View mit Inhalt wird zur Hauptseite --- */
+    AdwNavigationPage *main_page = adw_navigation_page_new(GTK_WIDGET(toolbar_view), APP_NAME);
+    adw_navigation_view_push(nav_view, main_page);
+
     /* --- Hamburger-Button innerhalb der Headerbar ----------------- */
     GtkMenuButton *menu_btn = GTK_MENU_BUTTON(gtk_menu_button_new());
     gtk_menu_button_set_icon_name(menu_btn, "open-menu-symbolic");
-    adw_header_bar_pack_start(header, GTK_WIDGET(menu_btn));
+    adw_header_bar_pack_start(header, GTK_WIDGET(menu_btn)); // Link in Headerbar
 
     /* --- Popover-Menu im Hamburger -------------------------------- */
     GMenu *menu = g_menu_new();
-    g_menu_append(menu, _(" Über OLED Saver "), "app.show-about");
-    GtkPopoverMenu *popover = GTK_POPOVER_MENU(
+    g_menu_append(menu, _("Einstellungen         "), "app.show-settings");
+    g_menu_append(menu, _("Infos zu OLED Saver   "), "app.show-about");
+    GtkPopoverMenu *menu_popover = GTK_POPOVER_MENU(
         gtk_popover_menu_new_from_model(G_MENU_MODEL(menu)));
-    gtk_menu_button_set_popover(menu_btn, GTK_WIDGET(popover));
+    gtk_menu_button_set_popover(menu_btn, GTK_WIDGET(menu_popover));
 
     /* --- Aktion die den About-Dialog öffnet ----------------------- */
-    const GActionEntry entries[] = {
+    const GActionEntry about_entry[] = {
         { "show-about", show_about, NULL, NULL, NULL }
     };
-    g_action_map_add_action_entries(G_ACTION_MAP(app), entries, G_N_ELEMENTS(entries), app);
+    g_action_map_add_action_entries(G_ACTION_MAP(app), about_entry, G_N_ELEMENTS(about_entry), app);
 
+    /* --- Action die die Einstellungen öffnet --- */
+    const GActionEntry settings_entry[] = {
+        { "show-settings", show_settings, NULL, NULL, NULL }
+    }; 
+    g_action_map_add_action_entries(G_ACTION_MAP(app), settings_entry, G_N_ELEMENTS(settings_entry), nav_view);
 
     /* ---- Haupt-Box ----------------------------------------------- */
     GtkBox *main_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 12));
