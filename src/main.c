@@ -11,7 +11,7 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.1.2"//_0
+#define APP_VERSION    "1.1.3"//_0
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
@@ -48,9 +48,9 @@ typedef struct {                   // Struktur für Combo_row
 } PixelOption;
 
 static const PixelOption pixel_options[] = {
-        { " 50 px",  50  },
-        { "100 px", 100 },
-        { "200 px", 200 },
+        { "  50 px",  50  },
+        { " 100 px", 100 },
+        { " 200 px", 200 },
 };
 
 static DesktopEnvironment detect_desktop(void) {
@@ -950,11 +950,12 @@ int main(int argc, char **argv)
     if (g_cfg.log_enable) log_file_init(APP_ID);
 
     /* 4. Localiziation-Setup */
-    const char *flatpak_id  = config_get_flatpak_id();      // flatpak string einlesen, wenn vorhanden
+    const char *flatpak_id   = getenv("FLATPAK_ID");        // flatpak string einlesen, wenn vorhanden
     const gchar *locale_path = NULL;                        // Variable mit auto. Freigabe
     setlocale(LC_ALL, "");                                  // ruft die aktuelle Locale des Prozesses ab
 //    setlocale(LC_ALL, "en_US.UTF-8");                     // explizit, zum testen!!
     textdomain             (APP_DOMAINNAME);                // textdomain festlegen
+    g_print("flatpak_id %s\n", flatpak_id);
     bind_textdomain_codeset(APP_DOMAINNAME, "UTF-8"); 
     if (flatpak_id != NULL && flatpak_id[0] != '\0')
     {
@@ -963,7 +964,7 @@ int main(int argc, char **argv)
         locale_path = "/usr/share/locale";
     }
     bindtextdomain         (APP_DOMAINNAME, locale_path);
-    //g_print("Localization files in: %s \n", locale_path); // testen!!
+    g_print("Localization files in: %s \n", locale_path); // testen!!
 
     /* 5. Resource‑Bundle registrieren */
     g_resources_register(resources_get_resource());
