@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025 super-toq
+# Copyright (C) 2026 super-toq
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <toq@mailbox.org>, 2025.
+# FIRST AUTHOR <toq@mailbox.org>, 2025-2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 4.1\n"
+"Project-Id-Version: 4.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-11 13:44+0100\n"
+"POT-Creation-Date: 2026-01-07 18:49+0100\n"
 "PO-Revision-Date: 2025-12-11 13:44+0100\n"
 "Last-Translator: toq <toq@mailbox.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,27 +17,66 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:288
+#: main.c:408
 msgid "Abbrechen"
 msgstr "Cancel"
 
-#: main.c:289
+#: main.c:409
 msgid "OK"
 msgstr "OK"
 
-#: main.c:419
+#: main.c:517 main.c:605
+msgid "Einstellungen"
+msgstr "Settings"
+
+#: main.c:533
+msgid "Präferenzoptionen"
+msgstr "Preference Options"
+
+#: main.c:539
+msgid "Leertaste verwenden"
+msgstr "Use Spacebar"
+
+#: main.c:541
+msgid ""
+"Verwende die Leertaste anstelle der Maus, um den Blackscreen-Modus zu beenden"
+msgstr ""
+"Use the Spacebar instead of the mouse to exit Black Screen mode"
+
+#: main.c:549
+msgid "Debug-Datei erstellen"
+msgstr "Create debug file"
+
+#: main.c:551
+msgid "Protokollausgaben in eine Datei schreiben"
+msgstr "Write log output to file"
+
+#: main.c:568
+msgid "Minimalbewegungen zulassen"
+msgstr "Allow minimal movements"
+
+#: main.c:570
+msgid "Mausbewegungsschwelle in Pixeln"
+msgstr "Mouse movement threshold in pixels"
+
+#: main.c:675
 msgid "Vollbild"
 msgstr "Fullscreen"
 
-#: main.c:514
-msgid " Über OLED Saver "
-msgstr " About OLED Saver "
+#: main.c:804
+msgid "Einstellungen         "
+msgstr "Settings            "
 
-#: main.c:537
+#: main.c:805
+#, fuzzy
+msgid "Infos zu OLED Saver   "
+msgstr "About OLED Saver "
+
+#: main.c:833
 msgid "Blackscreen statt Burn-in! \n"
 msgstr "Blackscreen instead of burn-in!\n"
 
-#: main.c:553
+#: main.c:849
 msgid ""
 " \n"
 "Standby wird jetzt blockiert!\n"
@@ -45,15 +84,15 @@ msgstr ""
 " \n"
 "Standby is prevented!\n"
 
-#: main.c:571
+#: main.c:867
 msgid "Alle 2min auffrischen"
 msgstr "Refresh every 2 minutes"
 
-#: main.c:586
+#: main.c:882
 msgid "Blackscreen"
 msgstr "Blackscreen"
 
-#: main.c:598
+#: main.c:894
 msgid "  Beenden  "
 msgstr "   Quit   "
 
