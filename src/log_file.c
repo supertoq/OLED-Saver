@@ -5,7 +5,7 @@
  *
  * log_file_init(APP_ID);
  *
- * Version 2026-01-06
+ * Version 2026-01-09 created in Allstedt
  */
 #include <glib.h>
 #include <stdio.h>
@@ -46,6 +46,20 @@ static void log_handler(const gchar *domain, GLogLevelFlags level, const gchar *
     fflush(log_file);
 }
 
+void log_folder_init(void)
+{
+    /* Pfad = ~/.local/state/<app-id>/  oder  ~/.var/app/<app-id>/state/  */
+    gchar *log_dir = g_build_filename(g_get_user_state_dir(), "bastis-oledsaver", NULL);
+
+    if (log_dir == NULL) {  // Fehlerbehandlung
+        return;
+    }
+
+    if (g_mkdir_with_parents(log_dir, 0700) != 0) {
+        g_free(log_dir);
+        return;
+    }
+}
 /* ----- API ----------------------------------------------------------------------------- */
 void log_file_init(const gchar *app_name)
 {
@@ -55,11 +69,20 @@ void log_file_init(const gchar *app_name)
        fclose(f);
     */
 
-    if (log_file)
-        return;
+//    if (log_file)
+//        return;
+
+    if (log_file) {
+        fclose(log_file); // Datei schließen, falls sie bereits geöffnet ist (zwecks Schalter toggeln)
+        log_file = NULL;  // Setze den Log-Dateizähler zurück
+    }
 
     /* Pfad = ~/.local/state/<app-id>/  oder  ~/.var/app/<app-id>/state/  */
     gchar *log_dir = g_build_filename(g_get_user_state_dir(), "bastis-oledsaver", NULL);
+
+    if (log_dir == NULL) {  // Fehlerbehandlung
+        return;
+    }
 
     if (g_mkdir_with_parents(log_dir, 0700) != 0) {
         g_free(log_dir);
