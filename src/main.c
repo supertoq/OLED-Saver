@@ -11,7 +11,7 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.1.5"//_3
+#define APP_VERSION    "1.1.5"//_4
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
@@ -252,8 +252,8 @@ static gboolean stop_system_inhibit(GError **error)
 {
     if (system_fd < 0) return FALSE; // kein fd - Rückgabe false
     close(system_fd);
-    system_fd = -1;
     g_print("[%s] [SYSTEM-INHIBIT] Inhibit closed (fd=%d)\n", time_stamp(), system_fd);
+    system_fd = -1;
     return TRUE; // erfolgreich beendet - Rückgabe true
 }
 
