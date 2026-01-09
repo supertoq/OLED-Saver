@@ -11,13 +11,13 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.1.5"//_0
+#define APP_VERSION    "1.1.5"//_3
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
 /* Fenstergröße Breite, Höche (380, 400) */
-#define WIN_WIDTH      380
-#define WIN_HEIGHT     440
+#define WIN_WIDTH      360
+#define WIN_HEIGHT     410
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -47,9 +47,11 @@ typedef struct {                   // Struktur für Combo_row
     int value;
 } PixelOption;
 
+static AdwToastOverlay *toast_overlay = NULL;
+
 static const PixelOption pixel_options[] = {
-        { "  50 px",  50  },
-        { " 100 px", 100 },
+        { "   50 px",  50  },
+        { "  100 px", 100 },
         { " 200 px", 200 },
 };
 
@@ -71,6 +73,15 @@ static int system_fd = -1;         // systemd/KDE-Inhibit (fd = File Descriptor/
                                    // geliefert von org.freedesktop.login1.Manager.Inhibit;
 guint fullscreen_timer_id = 0;
 
+/* ----- Toast Mitteilungen ----- */
+static void show_toast(const char *msg)
+{
+    if (!toast_overlay)
+        return;
+
+    AdwToast *toast = adw_toast_new(msg);
+    adw_toast_overlay_add_toast(toast_overlay, toast);
+}
 
 /* ----- GNOME ScreenSaver Inhibit ---------------------------------- */
 static void start_gnome_inhibit(void) { // Noch umbauen mit Rückmeldung bei Erfolg, wie STOP-Vorgang
@@ -252,6 +263,9 @@ static void start_standby_prevention(void) {  // Noch umbauen mit Rückmeldung b
     DesktopEnvironment de = detect_desktop();
     if (de == DESKTOP_GNOME) start_gnome_inhibit();
     start_system_inhibit(); // KDE, XFCE, MATE
+
+    /* Toast-Message ausgeben: */
+    show_toast(_("Standby wird nun verhindert!"));
 }
 /* --- STOP-Wrapper --- ausgelöst durch die Buttons ----------------- */
 static gboolean stop_standby_prevention(GError **error) 
@@ -265,7 +279,12 @@ static gboolean stop_standby_prevention(GError **error)
     if (!stop_system_inhibit (error))
         stop_sp = FALSE;
 
-    if (stop_sp) g_print("[%s] [INFO] Preventing standby has been stopped\n", time_stamp());
+    if (stop_sp)
+    {
+        g_print("[%s] [INFO] Preventing standby has been stopped\n", time_stamp());
+        //
+    }
+
     return stop_sp;
 }
 /* ------------------------------------------------------------------ */
@@ -382,6 +401,7 @@ static gboolean exit_fullscreen_by_key(GtkEventControllerKey *controller,
 }
 
 
+
 /* ----- Message / Alert-Dialog generisch, 
          show_alert_dialog (parent,*Titel, *Inhalttext) ------------- */
 static void on_alert_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data)
@@ -488,8 +508,12 @@ static void on_combo_changed(GObject *obj, GParamSpec *pspec, gpointer user_data
 /* ----- Verzeichnis zur Log-Datei öffnen ----------------------------------------------- */
 static void open_log_folder(GtkButton *button, gpointer user_data)
 {
-    const char *path = user_data;
-    char *uri = g_filename_to_uri(path, NULL, NULL);
+    /* Fehlerroutine, Verzeichnis anlegen, falls vom Benutzer gelöscht wurde */
+    log_folder_init();
+
+    const gchar *home = config_get_home_path();                                  // aus config.c
+    gchar *homepath = g_build_filename(home, ".var/app/free.basti.oledsaver/.local/state/bastis-oledsaver", NULL);
+    char *uri = g_filename_to_uri(homepath, NULL, NULL);
 
     if (uri) {
         gtk_show_uri(NULL, uri, GDK_CURRENT_TIME);
@@ -511,16 +535,25 @@ static void on_settings_use_key_switch_row_toggled(GObject *object1, GParamSpec 
     gtk_widget_set_sensitive(combo_row1, g_cfg.use_key ? FALSE : TRUE);
 }
 
-/* ----- In Einstellungen: Schalter2-Toggle --------------------------------------------- */
+/* ----- In Einstellungen: Schalter2-Toggle (AdwSwitchRow) ------------------------------- */ // version 1.1.4
 static void on_settings_log_enable_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
 {
-    AdwSwitchRow *log_enable_switch_row = ADW_SWITCH_ROW(object);
+    AdwSwitchRow *log_enable_switch_row = ADW_SWITCH_ROW(object); 
     gboolean active = adw_switch_row_get_active(log_enable_switch_row);
     g_cfg.log_enable = active;
     save_config(); // speichern
     g_print("[%s] [INFO] Settings: log_enable=%s\n", time_stamp(), g_cfg.log_enable ? "true" : "false"); // zum testen !!
 }
-
+/* ----- In Einstellungen: Schalter2-Toggle (GtkSwitch aus ActionRow)) ------------------ */ // ab version 1.1.5
+static void on_settings_log_enable_gtkswitch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
+{
+    GtkSwitch *log_enable_switch = GTK_SWITCH(object);
+    gboolean active = gtk_switch_get_active(log_enable_switch);
+    g_cfg.log_enable = active;
+    save_config(); // speichern
+    g_print("[%s] [INFO] Settings: log_enable=%s\n", time_stamp(), g_cfg.log_enable ? "true" : "false"); // zum testen !!
+    if (active) log_file_init(APP_ID); // Logging sofort beginnen
+}
 /* ----- Einstellungen-Page ------------------------------------------ */
 static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -539,18 +572,18 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     adw_toolbar_view_add_top_bar(settings_toolbar, GTK_WIDGET(settings_header));
 
     /* ----- Haupt-BOX der Settings-Seite ----- */
-    GtkWidget *settings_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
-    gtk_widget_set_margin_top(settings_box,    20);   // Rand unterhalb Toolbar
-    gtk_widget_set_margin_bottom(settings_box, 22);   // unterer Rand unteh. der Buttons
-    gtk_widget_set_margin_start(settings_box,  15);   // links
-    gtk_widget_set_margin_end(settings_box,    15);   // rechts
+    GtkWidget *settings_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_set_margin_top(settings_box,    12);   // Rand unterhalb Toolbar
+    gtk_widget_set_margin_bottom(settings_box, 12);   // unterer Rand unteh. der Buttons
+    gtk_widget_set_margin_start(settings_box,  12);   // links
+    gtk_widget_set_margin_end(settings_box,    12);   // rechts
 
     /* ----- PreferencesGroup erstellen ----- */
     AdwPreferencesGroup *settings_group = ADW_PREFERENCES_GROUP(adw_preferences_group_new());
     adw_preferences_group_set_title(settings_group, _("Präferenzoptionen"));
     //adw_preferences_group_set_description(settings_group, _("Zusatzbeschreibung - Platzhalter"));
 
-    /* ----- Combo Row erstellen ---------------------------------------------- */
+    /* ----- Combo Row erstellen ------------------------------------------------------------------- */
     GtkWidget *combo_row1 = adw_combo_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(combo_row1), 
                                                     _("Minimalbewegungen zulassen"));
@@ -570,10 +603,11 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
 
     /* ----- ComboRow verbinden ----------------------------- */
     g_signal_connect(combo_row1, "notify::selected", G_CALLBACK(on_combo_changed), NULL);
+    gtk_widget_set_sensitive(combo_row1, g_cfg.use_key ? FALSE : TRUE); // abhängig von cfg de/aktiviert
     
     /* ----- Combo Row zur PreferencesGroup hinzufügen ----- */
     adw_preferences_group_add(settings_group, combo_row1);
-    /* ------------------------------------------------------------- Ende Combo Box */
+    /* ------------------------------------------------------------------------------ Ende Combo Box */
 
     /* ----- AdwSwitchRow1 erzeugen --------- */
     AdwSwitchRow *switch_row1 = ADW_SWITCH_ROW(adw_switch_row_new());
@@ -596,43 +630,40 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
 //    gtk_widget_set_sensitive(GTK_WIDGET(switch_row2), TRUE);    //Aktiviert/Deaktiviert
 
 
-    /* ----- ActionRow erstellen --(ab Version 1.1.5)------------------------------------- Action ROW ------ */
+    /* ----- ActionRow erstellen --(ab Version 1.1.5)----------------------------- Action ROW ------ */
     AdwActionRow *action_row = ADW_ACTION_ROW(adw_action_row_new());
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(action_row), _("Debug-Datei erstellen"));
     adw_action_row_set_subtitle(action_row, _("Protokollausgaben in eine Datei schreiben"));
 
     /* ----- Button für Log-Folder erstellen ------------------- */
-    const gchar *home = config_get_home_path();                                        // aus config.c
-    gchar *homepath = g_build_filename(home, ".var/app/free.basti.oledsaver/.local/state/bastis-oledsaver", NULL);
 
     GtkWidget *folder_button = gtk_button_new_from_icon_name("folder-open-symbolic");
-    gtk_button_set_has_frame(GTK_BUTTON(folder_button), FALSE);                        // Button-Rahmen entfernen
+    gtk_button_set_has_frame(GTK_BUTTON(folder_button), FALSE);                  // Button-Rahmen entfernen
     gtk_widget_set_valign(folder_button, GTK_ALIGN_CENTER);
-    g_signal_connect(folder_button, "clicked", G_CALLBACK(open_log_folder),homepath);
+    g_signal_connect(folder_button, "clicked", G_CALLBACK(open_log_folder),NULL);
 
     /* ----- Switch für ActionRow erstellen ------ */
     GtkWidget *log_enable_switch = gtk_switch_new();
-    gtk_switch_set_active(GTK_SWITCH(log_enable_switch), g_cfg.log_enable);            // Schalterstellung abhängig von config
+    gtk_switch_set_active(GTK_SWITCH(log_enable_switch), g_cfg.log_enable);      // Schalterstellung abhängig von config
     gtk_widget_set_valign(log_enable_switch, GTK_ALIGN_CENTER);
 
     /* ----- Objekte in die ActionRow einfügen ------ */
     adw_action_row_add_prefix(action_row, folder_button);
     adw_action_row_add_suffix(action_row, log_enable_switch);
-    adw_action_row_set_activatable_widget(action_row, log_enable_switch);  /*------------ Action ROW ende -- */
+    adw_action_row_set_activatable_widget(action_row, log_enable_switch); /*----- Action ROW ende -- */
 
-
-    /* ----- AdwSwitchRow1 verbinden (use_key) -------- */
-    g_signal_connect(switch_row1, "notify::active",
-                                  G_CALLBACK( on_settings_use_key_switch_row_toggled), combo_row1); //combo_row1 ebenfalls übergeben um es zu deaktivieren
-
-    /* ----- AdwSwitchRow2  verbinden (log_enable) ------- */ // Version 1.1.4
-//    g_signal_connect(switch_row2, "notify::active", 
-//                                  G_CALLBACK(on_settings_log_enable_switch_row_toggled), NULL);
+    /* ----- Schalter verbinden --------------------------------- */
+    g_signal_connect(switch_row1,       "notify::active",              // use_key
+                                  G_CALLBACK(on_settings_use_key_switch_row_toggled), combo_row1); // combo_row1 ebenfalls übergeben, zum de/aktivieren
+//    g_signal_connect(switch_row2, "notify::active",                  // log_enable                // version 1.1.4
+//                                G_CALLBACK(on_settings_log_enable_switch_row_toggled), NULL);
+    g_signal_connect(log_enable_switch, "notify::active",              // log_enable                // version 1.1.5
+                                  G_CALLBACK(on_settings_log_enable_gtkswitch_toggled), NULL);
 
     /* ----- Rows zur PreferencesGruppe hinzufügen ----- */
     adw_preferences_group_add(settings_group, GTK_WIDGET(switch_row1));
-    //adw_preferences_group_add(settings_group, GTK_WIDGET(switch_row2)); action_row
-adw_preferences_group_add(settings_group, GTK_WIDGET(action_row));
+    //adw_preferences_group_add(settings_group, GTK_WIDGET(switch_row2));                           // version 1.1.4
+    adw_preferences_group_add(settings_group, GTK_WIDGET(action_row));                              // version 1.1.5
 
     /* ----- Pref.Gruppe in die Page einbauen ----- */
     gtk_box_append(GTK_BOX(settings_box), GTK_WIDGET(settings_group));
@@ -700,7 +731,14 @@ static void on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
     /* 1. Blackscreen erzeugen, Methode: Fenster */
     GtkApplication *app = GTK_APPLICATION(user_data);
 
-    /* 1.1 CSS-Provider für Hintergrundfarbe */
+    /* 1.1 Prüfen ob das GDK-Display gültig ist */
+    GdkDisplay *display = gdk_display_get_default();
+    if (display == NULL) {
+        g_warning("Error: Unable to obtain default display.\n");
+        return;
+    }
+
+    /* 1.2 CSS-Provider für Hintergrundfarbe */
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
         ".fullscreen-window { background-color: black; }");
@@ -710,7 +748,7 @@ static void on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
 
-    /* 1.2 Vollbild-Fenster */
+    /* 1.3 Vollbild-Fenster */
     GtkWidget *fullscreen_window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(fullscreen_window), _("Vollbild"));
     gtk_widget_add_css_class(fullscreen_window, "fullscreen-window");
@@ -718,7 +756,7 @@ static void on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
     gtk_window_set_default_widget(GTK_WINDOW(fullscreen_window), NULL); 
     gtk_window_set_decorated(GTK_WINDOW(fullscreen_window), FALSE);                 // randloses Overlay-Fenstern
 
-    /* Fenster anzeigen */
+    /* 1.4 Fenster anzeigen */
     gtk_window_present(GTK_WINDOW(fullscreen_window));
     gtk_window_set_focus_visible(GTK_WINDOW(fullscreen_window), TRUE);
 
@@ -775,6 +813,8 @@ static void on_quitbutton_clicked(GtkButton *button, gpointer user_data)
     /* zu schließendes Fenster holen */
     GtkWindow *window = GTK_WINDOW(user_data);
     gtk_window_destroy(window);
+    /* Logging beenden, falls aktiv */
+    log_file_shutdown();
 }
 
 
@@ -808,38 +848,53 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
 
-    /* ----- Adwaita-Fenster ---------------------------------------- */
-    AdwApplicationWindow *adw_win = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app))); 
+    /* ----- Adwaita-Fenster ----------------------------------------- */
+    AdwApplicationWindow *adw_win = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app)));
+    gtk_window_set_title(GTK_WINDOW(adw_win), APP_NAME);
+    gtk_window_set_default_size(GTK_WINDOW(adw_win), WIN_WIDTH, WIN_HEIGHT);
+    gtk_window_set_resizable(GTK_WINDOW(adw_win), FALSE);
 
-    gtk_window_set_title(GTK_WINDOW(adw_win), APP_NAME);     // WM-Titel
-    gtk_window_set_default_size(GTK_WINDOW(adw_win), WIN_WIDTH, WIN_HEIGHT);  // Standard-Fenstergröße Breite, Höche (380, 400)
-    gtk_window_set_resizable(GTK_WINDOW(adw_win), FALSE);       // Skalierung nicht erlauben
-
-    /* --- Navigation (Root-Widget) --------------------------------- */
+    /* --- NavigationView -------------------------------------------- */
     AdwNavigationView *nav_view = ADW_NAVIGATION_VIEW(adw_navigation_view_new());
-    adw_application_window_set_content(adw_win, GTK_WIDGET(nav_view));
 
-    /* ----- ToolbarView -------------------------------------------- */
+    /* ----- ToolbarView --------------------------------------------- */
     AdwToolbarView *toolbar_view = ADW_TOOLBAR_VIEW(adw_toolbar_view_new());
-// adw_application_window_set_content(adw_win, GTK_WIDGET(toolbar_view));
 
-    /* ----- HeaderBar mit TitelWidget ------------------------------ */
-    AdwHeaderBar *header = ADW_HEADER_BAR(adw_header_bar_new());
-    GtkWidget *title_label = gtk_label_new("Basti's OLED Saver");      // Label für Fenstertitel
-    gtk_widget_add_css_class(title_label, "heading");                  // .heading class
-    adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), GTK_WIDGET(title_label)); // Label einsetzen
-    adw_toolbar_view_add_top_bar(toolbar_view, GTK_WIDGET(header));   // Header‑Bar zur Toolbar‑View hinzuf
+    /* ----- HeaderBar ----------------------------------------------- */
+    AdwHeaderBar *headerbar = ADW_HEADER_BAR(adw_header_bar_new());
+    GtkWidget *title_label = gtk_label_new("Basti's OLED Saver");
+    gtk_widget_add_css_class(title_label, "heading");
+    adw_header_bar_set_title_widget(headerbar, title_label);
+    adw_toolbar_view_add_top_bar(toolbar_view, GTK_WIDGET(headerbar));      // Headerbar in ToolbarView
 
-    /* --- Nav_View mit Inhalt wird zur Hauptseite --- */
+    /* --- Hauptseite in NavigationView ------------------------------ */
     AdwNavigationPage *main_page = adw_navigation_page_new(GTK_WIDGET(toolbar_view), APP_NAME);
-    adw_navigation_view_push(nav_view, main_page);
+    adw_navigation_view_push(nav_view, main_page);                         // NavView als MainPage
 
-    /* --- Hamburger-Button innerhalb der Headerbar ----------------- */
+    /* ----- ToastOverlay -------------------------------------------- */
+    toast_overlay = ADW_TOAST_OVERLAY(adw_toast_overlay_new());
+    adw_toast_overlay_set_child(toast_overlay, GTK_WIDGET(nav_view));
+    /* ----- ToastOverlay in das Fenster einfügen  ------------------- */
+    adw_application_window_set_content(adw_win, GTK_WIDGET(toast_overlay)); // ToastOverl. in AdwWin
+
+     //  Widget Hierarchie:                                               (ab version 1.1.5)
+     //      ApplicationWindow
+     //      └---ToastOverlay
+     //          └---NavigationView
+     //              └---NavigationPage
+     //                  └---ToolbarView
+     //                      │
+     //                      ├---HeaderBar
+     //                      │   └---Titel
+     //                      ├---Seiteninhalt
+     //                      .
+
+    /* --- Hamburger-Button innerhalb der Headerbar ------------------ */
     GtkMenuButton *menu_btn = GTK_MENU_BUTTON(gtk_menu_button_new());
     gtk_menu_button_set_icon_name(menu_btn, "open-menu-symbolic");
-    adw_header_bar_pack_start(header, GTK_WIDGET(menu_btn)); // Link in Headerbar
+    adw_header_bar_pack_start(headerbar, GTK_WIDGET(menu_btn)); // Link in Headerbar
 
-    /* --- Popover-Menu im Hamburger -------------------------------- */
+    /* --- Popover-Menu im Hamburger --------------------------------- */
     GMenu *menu = g_menu_new();
     g_menu_append(menu, _("Einstellungen         "), "app.show-settings");
     g_menu_append(menu, _("Infos zu OLED Saver   "), "app.show-about");
@@ -847,7 +902,7 @@ static void on_activate(AdwApplication *app, gpointer user_data)
         gtk_popover_menu_new_from_model(G_MENU_MODEL(menu)));
     gtk_menu_button_set_popover(menu_btn, GTK_WIDGET(menu_popover));
 
-    /* --- Aktion die den About-Dialog öffnet ----------------------- */
+    /* --- Aktion die den About-Dialog öffnet ------------------------ */
     const GActionEntry about_entry[] = {
         { "show-about", show_about, NULL, NULL, NULL }
     };
@@ -859,111 +914,95 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     }; 
     g_action_map_add_action_entries(G_ACTION_MAP(app), settings_entry, G_N_ELEMENTS(settings_entry), nav_view);
 
-    /* ---- Haupt-Box ----------------------------------------------- */
+    /* ---- Haupt-Box ------------------------------------------------ */
     GtkBox *main_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 12));
 //    gtk_box_set_spacing(GTK_BOX(main_box), -0);                // Minus-Spacer, zieht unteren Teil nach oben
-    gtk_widget_set_margin_top   (GTK_WIDGET(main_box),    20);   // Rand unterhalb Toolbar
-    gtk_widget_set_margin_bottom(GTK_WIDGET(main_box),    20);   // unterer Rand unteh. der Buttons
-    gtk_widget_set_margin_start (GTK_WIDGET(main_box),    15);   // links
-    gtk_widget_set_margin_end   (GTK_WIDGET(main_box),    15);   // rechts
-    gtk_widget_set_hexpand      (GTK_WIDGET(main_box),  TRUE);
-    gtk_widget_set_vexpand      (GTK_WIDGET(main_box), FALSE);
+    gtk_widget_set_margin_top   (GTK_WIDGET(main_box),    24);   // Rand unterhalb Toolbar
+    gtk_widget_set_margin_bottom(GTK_WIDGET(main_box),    24);   // unterer Rand unteh. der Buttons
+    gtk_widget_set_margin_start (GTK_WIDGET(main_box),    12);   // links
+    gtk_widget_set_margin_end   (GTK_WIDGET(main_box),    12);   // rechts
+//    gtk_widget_set_hexpand      (GTK_WIDGET(main_box), TRUE);
+//    gtk_widget_set_vexpand      (GTK_WIDGET(main_box), TRUE);
 
-    /* ----- Label1 ------------------------------------------------- */
+    /* ----- Label1 -------------------------------------------------- */
     GtkWidget *label1 = gtk_label_new(_("Blackscreen statt Burn-in! \n"));
     gtk_widget_set_halign(label1, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(label1, GTK_ALIGN_CENTER);
 
-    /* A. ---- Platzhalter für Label1-BOX-Widget ----- */
-
-    /* B. ----- Label1 hier als Inhalt zur entspr.Box hinzufügen ---- */ 
-    gtk_box_append(main_box, label1);
-
-    /* ----- Icon --------------------------------------------------- */
+    /* ----- Icon ---------------------------------------------------- */
     GtkWidget *icon = gtk_image_new_from_resource("/free/basti/oledsaver/icon2"); //alias in xml !
     gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);                 // Icon horizontal zentrieren
-    gtk_image_set_pixel_size(GTK_IMAGE(icon), 128);
-    gtk_box_append(GTK_BOX(main_box), icon);
+    gtk_image_set_pixel_size(GTK_IMAGE(icon),  128);
+    gtk_widget_set_margin_top(GTK_WIDGET(icon), 10);               // Abstand zum Label1
 
-    /* ----- Label2 ------------------------------------------------- */
-    GtkWidget *label2 = gtk_label_new(_(" \nStandby wird jetzt blockiert!\n"));
-    gtk_widget_set_halign(label2, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(label2, GTK_ALIGN_CENTER);
-    gtk_widget_add_css_class(label2, "warning");
-
-    /* ----- Label2-BOX --------------------------------------------- */
-    GtkWidget *label2_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_widget_set_hexpand(label2_box, FALSE); // Keine Expansion, Platz für Label2 lassen
-    gtk_widget_set_vexpand(label2_box, FALSE);
-      /* Box selbst zentrieren */
-    gtk_widget_set_halign(label2_box, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(label2_box, GTK_ALIGN_CENTER);
-      /* Label2 der Label2-BOX zufügen */
-    gtk_box_append(GTK_BOX(label2_box), GTK_WIDGET(label2));
-      /* Label2-BOX der Haupt-Box hinzufügen */
-    gtk_box_append(GTK_BOX(main_box), GTK_WIDGET(label2_box));
-
-    /* ----- Checkbox "set1_check" ---------------------------------- */
+    /* ----- Checkbox "set1_check" ----------------------------------- */
     GtkWidget *set1_check = gtk_check_button_new_with_label(_("Alle 2min auffrischen")); 
     gtk_check_button_set_active(GTK_CHECK_BUTTON(set1_check), FALSE); // standardmäßig auf inaktiv
     gtk_widget_set_visible(GTK_WIDGET(set1_check), TRUE); // Checkbox Sichtbarkeit
 
-    /* ----- Checkbox-BOX-Widget ------------------------------------ */
-    GtkWidget *chbx_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    /* ----- Checkbox-BOX-Widget ------------------------------------- */
+    GtkWidget *chbx_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
     gtk_widget_set_hexpand(chbx_box, FALSE);
     gtk_widget_set_halign(chbx_box, GTK_ALIGN_CENTER);
     gtk_box_append(GTK_BOX(chbx_box), GTK_WIDGET(set1_check));
 
-    /* ----- Button-Box --------------------------------------------- */
-    GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_box_append(main_box, chbx_box);
+    /* --- g_object, Checkbox an "app" speichern, um diese im Callback abrufen zu können --- */
+    g_object_set_data(G_OBJECT(app), "check", set1_check);
 
-    /* ----- Schaltfläche-Fullscreen -------------------------------- */
+    /* ----- Buttons-Box ---------------------------------------------- */
+    GtkWidget *buttons_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
+    gtk_widget_set_halign(buttons_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(buttons_box, GTK_ALIGN_END); // Box fest am unteren Rand
+
+    /* ----- Schaltfläche-Fullscreen --------------------------------- */
     GtkWidget *setfullscreen_button = gtk_button_new_with_label(_("Blackscreen"));
-    gtk_widget_set_halign(setfullscreen_button, GTK_ALIGN_CENTER);
+    //gtk_widget_set_halign(setfullscreen_button, GTK_ALIGN_CENTER);
     //gtk_widget_add_css_class(setfullscreen_button, "suggested-action");
     gtk_widget_add_css_class(setfullscreen_button, "custom-suggested-action-button1"); // CSS-Provider...
     gtk_widget_add_css_class(setfullscreen_button, "opaque"); // durchsichtig machen...
 
-    /* --- g_object, Checkbox an "app" speichern, um diese im Callback abrufen zu können --- */
-    g_object_set_data(G_OBJECT(app), "check", set1_check);
-    /* --- Schaltfläche-Fullscreen verbinden und "app" übergeben --- */
-    g_signal_connect(setfullscreen_button, "clicked", G_CALLBACK(on_fullscreen_button_clicked), app);
-
-    /* ----- Schaltfläche Beenden ----------------------------------- */
+    /* ----- Schaltfläche Beenden ------------------------------------ */
     GtkWidget *quit_button = gtk_button_new_with_label(_("  Beenden  "));
     gtk_widget_set_halign(quit_button, GTK_ALIGN_CENTER);
     //gtk_widget_add_css_class(quit_button, "raised");
     gtk_widget_add_css_class(quit_button, "custom-suggested-action-button2"); // CSS-Provider...
     gtk_widget_add_css_class(quit_button, "opaque"); // durchsichtig,
     //gtk_widget_add_css_class(quit_button, "destructive-action");
-    // Schaltfläche Beenden Signal verbinden:
+
+    /* --- Schaltflächen verbinden und "app" übergeben --------------- */
+    g_signal_connect(setfullscreen_button, "clicked", G_CALLBACK(on_fullscreen_button_clicked), app);
     g_signal_connect(quit_button, "clicked", G_CALLBACK(on_quitbutton_clicked), adw_win);
     /* ------ Close-request vom originalen "Window-close-button" abfangen ----- */
     g_signal_connect(adw_win, "close-request", G_CALLBACK(on_quitbutton_clicked), adw_win);
 
-    /* ----- Beide Schaltflächen der BOX hinzufügen ---------------- */
-    gtk_box_append(GTK_BOX(button_box), quit_button);
-    gtk_box_append(GTK_BOX(button_box), setfullscreen_button);
+    /* ----- Beide Schaltflächen der BOX hinzufügen ------------------ */
+    gtk_box_append(GTK_BOX(buttons_box), quit_button);
+    gtk_box_append(GTK_BOX(buttons_box), setfullscreen_button);
 
-    /* ----- button_box der Haupt-Box (box) hinzufügen ------------- */
-    gtk_widget_set_valign(button_box, GTK_ALIGN_END);    // Ausrichtung nach unten
-    gtk_widget_set_halign(button_box, GTK_ALIGN_CENTER); // Ausrichtung mittig
-    gtk_box_append(GTK_BOX(main_box), button_box);
-    gtk_widget_set_vexpand(button_box, TRUE);            // Platz über Buttons ausdehnen
-    
-    /* -----  Haupt-Box zur ToolbarView hinzufügen ----------------- */
+    /* ----- Spacer hinzufügen --------------------------------------- */
+    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_vexpand(spacer, TRUE);
+
+    /* ----- Objekte der MainBOX hinzufügen -------------------------- */
+    gtk_box_append(main_box, label1);
+    gtk_box_append(GTK_BOX(main_box), icon);
+    gtk_box_append(GTK_BOX(main_box), spacer);              // Spacer
+    gtk_box_append(main_box, chbx_box);                     // Checkbox-BOX hinzufügen
+    gtk_box_append(GTK_BOX(main_box), buttons_box);
+
+    /* -----  Haupt-Box zur ToolbarView hinzufügen ------------------- */
     adw_toolbar_view_set_content(toolbar_view, GTK_WIDGET(main_box));
 
     /* --- Dark-Mode erzwingen --- */
     AdwStyleManager *style_manager = adw_style_manager_get_default();
     adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
 
-    /* ----- Haupt-Fenster desktop‑konform anzeigen --------------- */
+    /* ----- Haupt-Fenster desktop‑konform anzeigen ------------------ */
     gtk_window_present(GTK_WINDOW(adw_win));
 
-    /* +++++ Funktion zum umgehen der Standbyzeit starten +++++++++ */
+    /* +++++ Funktion zum umgehen der Standbyzeit starten ++++++++++++ */
     start_standby_prevention();
+
 }
 
 /* --------------------------------------------------------------------------- */
@@ -979,15 +1018,16 @@ int main(int argc, char **argv)
                         adw_application_new(APP_ID, G_APPLICATION_DEFAULT_FLAGS);
 
     /* 2. Config-Datei initialisieren */
-    init_environment(); // Config.c: Environment ermitteln
-    init_config();      // Config.c: Config File laden/erstellen
+    init_environment();                                     // Config.c: Environment ermitteln
+    init_config();                                          // Config.c: Config File laden/erstellen
 
     /* 2.1 Config-Werte zum testen auslesen: !! */
 //    g_print("Settings:\n mouse_move_limit=%d,\n use_key=%d\n log_enable=%d\n",
 //                         g_cfg.mouse_move_limit, g_cfg.use_key, g_cfg.log_enable);
 
-    /* 3. externes Logging starten und APP_ID übermitteln */
-    if (g_cfg.log_enable) log_file_init(APP_ID);
+    /* 3. Externes Logging starten und APP_ID übermitteln */
+    log_folder_init();                                      // Logfolder immer erstellen
+    if (g_cfg.log_enable) log_file_init(APP_ID);            // Logging aktivieren
 
     /* 4. Localiziation-Setup */
     const char *flatpak_id   = getenv("FLATPAK_ID");        // flatpak string einlesen, wenn vorhanden
@@ -1004,15 +1044,14 @@ int main(int argc, char **argv)
         locale_path = "/usr/share/locale";
     }
     bindtextdomain         (APP_DOMAINNAME, locale_path);
-    g_print("[%s] [INFO] Localization files in: %s \n", time_stamp(), locale_path); // testen!!
+    g_print("[%s] [INFO] Localization files in: %s \n", time_stamp(), locale_path);
 
-    /* 5. Resource‑Bundle registrieren */
+    /* 5. Resource-Bundle registrieren */
     g_resources_register(resources_get_resource());
 
-    /* 6. Verbindung zu UI */
-    g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
-    //g_signal_connect(app, "shutdown", G_CALLBACK(stop_standby_prevention), NULL);
+    /* 7. Verbindung zu UI */
+    g_signal_connect(app, "activate",     G_CALLBACK(on_activate),  NULL);
 
-    /* 7. Anwendung starten und Ereignis warten */
+    /* 8. Anwendung starten und Ereignis warten */
     return g_application_run(G_APPLICATION(app), argc, argv);
 }
