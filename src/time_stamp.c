@@ -25,7 +25,7 @@ const char *time_stamp(void)
     g_strlcpy(buf, time_format, sizeof(buf));               // in statischen Puffer kopieren
 
 /* Info:  g_strlcpy - Kopiert so viele Zeichen wie passen und setzt Nullterminator "\0" am Ende;
-    gsize g_strlcpy(char *Ziel, const char *Quelle, gsize Zielpuffergröße);
+    gsize g_strlcpy(char *Ziel, const char *Quelle, gsize Zielpuffergröße);  */
 
     /* freigeben */
     g_free(time_format);

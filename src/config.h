@@ -6,7 +6,7 @@
  * Globalen Struktur FindConfig g_cfg und 
  * Deklaration init_environment(), init_config(), save_config(), config_cleanup().
  *
- * Version 2026-01-06
+ * Version 2026-01-10
  */
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -16,7 +16,8 @@
 /* ----- Globale Struktur um Konfigurations-Parameter zu kapseln ------------ */
 typedef struct {
     int mouse_move_limit;                  // Zahl zwischen 50 - 200
-    gboolean     use_key;                  // zukünftige Einstellungen
+    gboolean     use_key;                  // Fullscreen per Leertaste beenden
+    gboolean start_in_fs;                  // direkt im Fullscreen-Modus starten
     gboolean  log_enable;                  // logging in Datei
 } FindConfig;
 extern FindConfig  g_cfg;                  // Globale Instanz

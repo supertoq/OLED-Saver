@@ -29,7 +29,7 @@ static void g_print_to_log(const gchar *print_msg)
 
 /* ----- Log-Handler, Alle Log-Meldungen in Datei schreiben ------------------------------- */
 static void log_handler(const gchar *domain, GLogLevelFlags level, const gchar *handler_msg, gpointer user_data)
-{
+{ (void)domain; (void)user_data;
     if (!log_file)
         return;
 
@@ -62,7 +62,8 @@ void log_folder_init(void)
 }
 /* ----- API ----------------------------------------------------------------------------- */
 void log_file_init(const gchar *app_name)
-{
+{ (void)app_name;
+
      /* Mini-Beispiel:
        FILE *f = fopen("test.log", "a");
        fprintf(f, "Hello\n");
@@ -117,7 +118,7 @@ void log_file_shutdown(void)
     if (!log_file)
         return;
 
-    g_message("Logging shutdown");
+    g_message("Logging shutdown\n"); // Leerzeile als Trenner im Logfile
 
     fclose(log_file);
     log_file = NULL;

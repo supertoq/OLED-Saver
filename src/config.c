@@ -10,11 +10,12 @@
  *
  *  g_cfg.mouse_move_limit
  *  g_cfg.use_key
+ *  g_cfg.start_in_fs
  *  g_cfg.log_enable
  *  config_get_config_path()
  *  home_path - verwenden anhand: " const gchar *home = config_get_home_path(); " = readonly, nicht g_free
  *  flatpak_id - per config_get_flatpak_id()
- * Version 2026-01-06  created in Allstedt with joy
+ * Version 2026-01-10  created in Allstedt with joy
  */
 
 #include "time_stamp.h"
@@ -31,6 +32,7 @@ static const gchar *flatpak_id  = NULL;    // Flatpak ID readonly / GLib-owned
 FindConfig g_cfg = {            // Standard-Werte, falls alles fehlschlägt
     .mouse_move_limit = 50,
     .use_key          = FALSE,
+    .start_in_fs      = FALSE,
     .log_enable       = FALSE
 };
 /* ---- Getter-Funktionen ---- */ // (Info für mich: nur so übermitteln)
@@ -59,8 +61,7 @@ void init_environment(void)
     home_path = g_get_home_dir();
 
     const gchar *user_config_dir = g_get_user_config_dir();
-    //config_path = g_build_filename(user_config_dir, "bastis-oledsaver", "settings.cfg", NULL);  // normal
-    config_path = g_build_filename(user_config_dir, "bastis-oledsaver", "settings.cfg", NULL);        // flatpak
+    config_path = g_build_filename(user_config_dir, "bastis-oledsaver", "settings.cfg", NULL);    // flatpak
 
     g_print("[%s] [Config] Configuration file path: %s\n", time_stamp(), config_path);
 }
@@ -71,7 +72,7 @@ void init_config(void)
     GError *error = NULL;
 
     if (!config_path) {
-        g_warning("[%s] [Config] init_environment() not called\n");
+        g_warning("[Config] init_environment() not called\n");
         return;
     }
 
@@ -80,7 +81,7 @@ void init_config(void)
 
     /* Config-Verzeichnis anlegen */
     gchar *config_dir = g_path_get_dirname(config_path);
-    if (g_mkdir_with_parents(config_dir, 0700) != 0) {
+    if (g_mkdir_with_parents(config_dir, 0700) != 0) {  // Zugriffsrechte
         g_warning("[%s] [Config] Failed to create config directory: %s\n", time_stamp(), config_dir);
         g_free(config_dir);
         return;
@@ -97,8 +98,9 @@ void init_config(void)
     /* Gruppe [General] mit den zugehörigen Werten erzwingen, wenn nicht vorhanden */
     if (!g_key_file_has_group(key_file, "General")) {
         g_key_file_set_integer(key_file, "General", "mouse_move_limit", 50);
-        g_key_file_set_boolean(key_file, "General", "use_key", FALSE);
-        g_key_file_set_boolean(key_file, "General", "log_enable", FALSE);
+        g_key_file_set_boolean(key_file, "General", "use_key",       FALSE);
+        g_key_file_set_boolean(key_file, "General", "start_in_fs",   FALSE);
+        g_key_file_set_boolean(key_file, "General", "log_enable",    FALSE);
     }
 
     /* Gruppe existiert aber Keys darin sind leer, ebenfals Werte erzwingen */
@@ -109,6 +111,9 @@ void init_config(void)
     if (!g_key_file_has_key(key_file, "General", "use_key", NULL))
         g_key_file_set_boolean(key_file, "General", "use_key", FALSE);
     // key3
+    if (!g_key_file_has_key(key_file, "General", "start_in_fs", NULL))
+        g_key_file_set_boolean(key_file, "General", "start_in_fs", FALSE);
+    // key4
     if (!g_key_file_has_key(key_file, "General", "log_enable", NULL))
         g_key_file_set_boolean(key_file, "General", "log_enable", FALSE);
 
@@ -128,6 +133,13 @@ void init_config(void)
         g_clear_error(&error);
     }
     // key3
+    error = NULL;
+    g_cfg.start_in_fs = g_key_file_get_boolean(key_file, "General", "start_in_fs", &error);
+    if (error) {
+        g_cfg.start_in_fs = FALSE;
+        g_clear_error(&error);
+    }
+    // key4
     error = NULL;
     g_cfg.log_enable = g_key_file_get_boolean(key_file, "General", "log_enable", &error);
     if (error) {
@@ -150,6 +162,8 @@ void save_config(void)
     // key2
     g_key_file_set_boolean(key_file, "General", "use_key",          g_cfg.use_key);
     // key3
+    g_key_file_set_boolean(key_file, "General", "start_in_fs",      g_cfg.start_in_fs);
+    // key4
     g_key_file_set_boolean(key_file, "General", "log_enable",       g_cfg.log_enable);
 
     GError *error = NULL;
