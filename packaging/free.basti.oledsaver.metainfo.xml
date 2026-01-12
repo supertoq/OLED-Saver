@@ -37,7 +37,7 @@
   </screenshots> 
   <!-- Releases Information  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    -->
 <releases>
-  <release version="1.1.5" date="2026-01-09">
+  <release version="1.2.0" date="2026-01-11">
     <description>
       <p>This release includes improvements for a better user experience. </p>
       <ul>
@@ -46,6 +46,7 @@
     </description>
   </release>
   <!-- Previous Releases  -->
+  <release version="1.1.5" date="2026-01-09" />
   <release version="1.1.0" date="2026-01-07" />
   <release version="1.0" date="2025-11-21" />
 </releases>

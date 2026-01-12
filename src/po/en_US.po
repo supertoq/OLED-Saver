@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Copyright (C) 2025 - 2026 COPYRIGHT super-toq
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# FIRST AUTHOR toq@mailbox.org, 2025.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: free.basti.oledsaver\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-09 17:51+0100\n"
+"POT-Creation-Date: 2026-01-12 13:05+0100\n"
 "PO-Revision-Date: 2025-12-11 13:44+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,76 +17,80 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:268
+#: main.c:287
 msgid "Standby wird nun verhindert!"
 msgstr "Standby is prevented!"
 
-#: main.c:429
-msgid "Abbrechen"
-msgstr "Cancel"
-
-#: main.c:430
-msgid "OK"
-msgstr "OK"
-
-#: main.c:567 main.c:676
+#: main.c:606 main.c:718
 msgid "Einstellungen"
 msgstr "Settings"
 
-#: main.c:583
+#: main.c:622
 msgid "Präferenzoptionen"
 msgstr "Preference Options"
 
-#: main.c:589
+#: main.c:628
 msgid "Minimalbewegungen zulassen"
 msgstr "Allow minimal movements"
 
-#: main.c:591
+#: main.c:630
 msgid "Mausbewegungsschwelle in Pixeln"
 msgstr "Mouse movement threshold in pixels"
 
-#: main.c:615
+#: main.c:654
 msgid "Leertaste verwenden"
 msgstr "Use Spacebar"
 
-#: main.c:617
+#: main.c:656
 msgid ""
 "Verwende die Leertaste anstelle der Maus, um den Blackscreen-Modus zu beenden"
-msgstr ""
-"Use the Spacebar instead of the mouse to exit Black Screen mode"
+msgstr "Use the Spacebar instead of the mouse to exit Black Screen mode"
 
-#: main.c:635
+#: main.c:664
+msgid "Im Fullscreen-Modus starten"
+msgstr "Start in fullscreen mode"
+
+#: main.c:666
+msgid "App direkt im Fullscreen-Modus starten"
+msgstr "Start app directly in fullscreen mode"
+
+#: main.c:674
 msgid "Debug-Datei erstellen"
 msgstr "Create debug file"
 
-#: main.c:636
+#: main.c:675
 msgid "Protokollausgaben in eine Datei schreiben"
 msgstr "Write log output to file"
 
-#: main.c:753
-msgid "Vollbild"
-msgstr "Fullscreen"
-
-#: main.c:899
+#: main.c:952
 msgid "Einstellungen         "
 msgstr "Settings            "
 
-#: main.c:900
+#: main.c:953
 msgid "Infos zu OLED Saver   "
 msgstr "About OLED Saver   "
 
-#: main.c:928
+#: main.c:977
 msgid "Blackscreen statt Burn-in! \n"
-msgstr "Blackscreen instead of burn-in!\n"
+msgstr "Black Screen instead of burn-in!\n"
 
-#: main.c:939
+#: main.c:988
 msgid "Alle 2min auffrischen"
 msgstr "Refresh every 2 minutes"
 
-#: main.c:958
+#: main.c:1007
 msgid "Blackscreen"
-msgstr "Blackscreen"
+msgstr "Black Screen"
 
-#: main.c:965
+#: main.c:1014
 msgid "  Beenden  "
 msgstr "   Quit   "
+
+#~ msgid "Abbrechen"
+#~ msgstr "Cancel"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Vollbild"
+#~ msgstr "Fullscreen"
