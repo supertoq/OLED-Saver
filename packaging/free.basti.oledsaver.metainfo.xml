@@ -37,11 +37,11 @@
   </screenshots> 
   <!-- Releases Information  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    -->
 <releases>
-  <release version="1.2.0" date="2026-01-11">
+  <release version="1.2.1" date="2026-01-11">
     <description>
-      <p>This release includes improvements for a better user experience. </p>
+      <p>This release includes improvements an fixes for a better user experience. </p>
       <ul>
-        <li>For changelogs, see GitHub Releases.</li>
+        <li>See GitHub for details.</li>
       </ul>
     </description>
   </release>
