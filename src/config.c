@@ -15,6 +15,7 @@
  *  config_get_config_path()
  *  home_path - verwenden anhand: " const gchar *home = config_get_home_path(); " = readonly, nicht g_free
  *  flatpak_id - per config_get_flatpak_id()
+ *
  * Version 2026-01-10  created in Allstedt with joy
  */
 

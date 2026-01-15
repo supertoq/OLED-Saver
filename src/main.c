@@ -3,7 +3,7 @@
  *
  *
  *
- * gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o _build/bin/bastis-oledsaver src/main.c src/time_stamp.c src/log_file.c src/config.c src/free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1) -lm -Wno-deprecated-declarations
+ * gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o _build/bin/bastis-oledsaver src/main.c src/time_stamp.c src/stby_prev.c src/log_file.c src/config.c src/free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1) -lm -Wno-deprecated-declarations
  *
  *
  *
@@ -11,7 +11,7 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.2.1"//_0
+#define APP_VERSION    "1.2.2"//_0
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
@@ -24,41 +24,22 @@
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include "icon-gresource.h" // binäre Icons;
-#include <string.h>         // für strstr() in Desktopumgebung;
+#include <string.h>            // für strstr() in Desktopumgebung;
 #include <math.h>           // Mathe.Bibliothek für Berechnung der Mauskoordinatenveränderung (sqrt);
-#include <dbus/dbus.h>      // für DBusConnection,DBusMessage,dbus_bus_get(),dbus_message_new_method_call;
-#include <unistd.h>
+#include <unistd.h>         // POSIX-Header
 #include <locale.h>         // für setlocale(LC_ALL, "")
 #include <glib/gi18n.h>     // für " _(); "
 
 #include "config.h"         // für Konfigurationsdatei;
 #include "time_stamp.h"     // für Zeitstempel in Meldungen;
+#include "stby_prev.h"      // Standbyverhinderungslogik
 #include "log_file.h"       // für externe Log-Datei (~/.var/app/<id>/state/), wenn aktiviert;
 
-/* libadwaite 1.8 */
+/* Voraussetzung libadwaite 1.8 */
 #ifndef ADW_VERSION_1_8
 #error "NOT building against libadwaita headers"
 #endif
-/* ----- Umgebung identifizieren ------------------------------------ */
-typedef enum {
-    DESKTOP_UNKNOWN,
-    DESKTOP_GNOME,
-    DESKTOP_KDE,
-    DESKTOP_XFCE,
-    DESKTOP_MATE
-} DesktopEnvironment;
-static DesktopEnvironment detect_desktop(void) {
-    const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    if (!desktop) desktop = g_getenv("DESKTOP_SESSION");
-    if (!desktop) return DESKTOP_UNKNOWN;
-    g_autofree gchar *upper = g_ascii_strup(desktop, -1);
-    if (strstr(upper, "GNOME")) return DESKTOP_GNOME;
-    if (strstr(upper, "KDE"))   return DESKTOP_KDE;
-    if (strstr(upper, "XFCE"))  return DESKTOP_XFCE;
-    if (strstr(upper, "MATE"))  return DESKTOP_MATE;
-    return DESKTOP_UNKNOWN;
-}
-
+/* ----- Globale Strukturen ------------------------------------ */
 typedef struct {                                  // Struktur für Combo_row
     const char *label;                            // Bezeichner der Combo-Optionen
     int value;
@@ -84,12 +65,6 @@ typedef struct {
     guint                    fullscreen_timer_id; // Timer (guint vergibt die ID zum beenden)
 } ScreensaverStruct;
 
-/* --- Globale Variablen für Inhibit --- */
-static uint32_t gnome_cookie = 0;  // GNOME-Inhibit uint32-Cookie, geliefert von org.freedesktop.ScreenSaver.Inhibit;
-static int system_fd = -1;         // systemd/KDE-Inhibit (fd = File Descriptor/Verbindung zu einem Systemdienst)
-                                   // geliefert von org.freedesktop.login1.Manager.Inhibit;
-
-
 /* ----- Toast Mitteilungen ---------------------------------------- */
 static void show_toast(const char *msg)
 {
@@ -102,183 +77,13 @@ static void show_toast(const char *msg)
     adw_toast_overlay_add_toast(toast_manager.toast_overlay, toast);
 }
 
-/* ----- GNOME ScreenSaver Inhibit ---------------------------------- */
-static void start_gnome_inhibit(void) { // Noch umbauen mit Rückmeldung bei Erfolg, wie STOP-Vorgang
-    DBusError err;
-    DBusConnection *conn;
-    DBusMessage *msg, *reply;
-    DBusMessageIter args;
-
-    dbus_error_init(&err);
-    /* Session-Bus */
-    conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-    if (!conn || dbus_error_is_set(&err)) {
-        g_warning("[GNOME-INHIBIT] DBus error: %s\n", err.message); dbus_error_free(&err);
-        return; 
-    }
-
-    /* DBus-Auffruf vorbereiten */
-    msg = dbus_message_new_method_call(
-        "org.freedesktop.ScreenSaver",
-        "/ScreenSaver",
-        "org.freedesktop.ScreenSaver",
-        "Inhibit"
-    );
-    
-    if (!msg) {
-        g_warning("[GNOME-INHIBIT] Error creating the DBus message (1)\n");
-        return; 
-    }
-
-    const char *app = APP_NAME;
-    const char *reason = "Prevent Standby";
-    dbus_message_iter_init_append(msg, &args);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &app);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &reason);
-
-    /* Nachricht senden */
-    reply = dbus_connection_send_with_reply_and_block(conn, msg, -1, &err);
-
-    /* Antwort auslesen (COOKIE als uint32) */
-    DBusMessageIter iter;
-    if (!reply) {
-        g_warning("[GNOME-INHIBIT] Inhibit failed: no reply received\n");
-        dbus_message_unref(msg);
-        return;
-    }
-
-    if (!dbus_message_iter_init(reply, &iter) ||
-        dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_UINT32) {
-        g_warning("[GNOME-INHIBIT] Inhibit reply invalid (no cookie)\n");
-        dbus_message_unref(msg);
-        dbus_message_unref(reply);
-        return;
-    }
-
-    dbus_message_iter_get_basic(&iter, &gnome_cookie);
-    g_print("[%s] [GNOME-INHIBIT] Inhibit activate (cookie=%u)\n", time_stamp(), gnome_cookie);
-
-    dbus_message_unref(msg);
-    dbus_message_unref(reply);
-}
-
-/* ----- Stop Gnome Inhibit ----------------------------------------- */
-static gboolean stop_gnome_inhibit(GError **error) 
-{ (void)error; // Bewusst noch ungenutzt
-
-    if (!gnome_cookie) return TRUE; // True wenn kein Cookie vorhanden
-
-    DBusError err;
-    DBusConnection *conn;
-    DBusMessage *msg;
-    DBusMessageIter args;
-
-    dbus_error_init(&err);
-
-    conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-    if (!conn || dbus_error_is_set(&err)) {
-       g_warning("[GNOME-INHIBIT] DBus error (session): %s\n", err.message);
-       dbus_error_free(&err); return FALSE; }
-
-    msg = dbus_message_new_method_call(
-        "org.freedesktop.ScreenSaver",
-        "/ScreenSaver",
-        "org.freedesktop.ScreenSaver",
-        "UnInhibit"
-    );
-
-    if (!msg) {
-        g_warning("[GNOME-INHIBIT] Error creating the DBus message (2)\n");
-        return FALSE;
-    }
-
-    dbus_message_iter_init_append(msg, &args);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &gnome_cookie);
-
-    dbus_connection_send(conn, msg, NULL);
-    dbus_message_unref(msg);
-    g_print("[%s] [GNOME-INHIBIT] Inhibit closed (cookie=%u)\n", time_stamp(), gnome_cookie);
-    gnome_cookie = 0;
-    return TRUE; // Erfolgreich beendet - Rückgabe true
-}
-
-/* ----- systemd/KDE login1.Manager Inhibit ------------------------- */
-static void start_system_inhibit(void) 
-{ // Noch umbauen mit Rückmeldung bei Erfolg, wie STOP-Vorgang
-
-    DBusError err;
-    DBusConnection *conn;
-    DBusMessage *msg, *reply;
-    DBusMessageIter args;
-
-    /* Fehlerbehandlung */
-    dbus_error_init(&err);
-
-    /* Verbindung zum Systembus herstellen */
-    conn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
-    if (!conn || dbus_error_is_set(&err)) {
-       g_warning("System DBus error: %s\n", err.message);
-       dbus_error_free(&err); return; 
-    }
-
-    /* Methodenaufruf vorbereiten */
-    msg = dbus_message_new_method_call(
-        "org.freedesktop.login1",
-        "/org/freedesktop/login1",
-        "org.freedesktop.login1.Manager",
-        "Inhibit");
-
-    if (!msg) {
-       g_warning("[SYSTEM-INHIBIT] Error creating the DBus message\n");
-       return;
-    }
-
-    /* Argumente für Inhibit vorbereiten */
-    const char *what = "sleep:idle:shutdown:handle-lid-switch:handle-suspend-key";
-    const char *who  = "OLED-Saver";
-    const char *why  = "Prevent Standby";
-    const char *mode = "block";
-
-    dbus_message_iter_init_append(msg, &args);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &what);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &who);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &why);
-    dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &mode);
-
-     /* Methode senden und Antwort empfangen */
-    reply = dbus_connection_send_with_reply_and_block(conn, msg, -1, &err);
-    if (!reply || dbus_error_is_set(&err)) {
-       g_warning("[SYSTEM-INHIBIT] Inhibit failed: %s\n", err.message);
-       dbus_error_free(&err); dbus_message_unref(msg);
-       return; 
-    }
-
-    DBusMessageIter iter;
-    if (!dbus_message_iter_init(reply, &iter) ||
-        dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_UNIX_FD) {
-        g_warning("[SYSTEM-INHIBIT] Inhibit reply invalid\n");
-        dbus_message_unref(msg);
-        dbus_message_unref(reply);
-        return;
-    }
-
-    dbus_message_iter_get_basic(&iter, &system_fd);
-    g_print("[%s] [SYSTEM-INHIBIT] Inhibit activate (fd=%d)\n", time_stamp(), system_fd);
-    /* Aufräumen */
-    dbus_message_unref(msg);
-    dbus_message_unref(reply);
-}
-
-/* ----- Stop System Inhibit ---------------------------------------- */
-static gboolean stop_system_inhibit(GError **error) 
-{ (void)error; // Bewusst noch ungenutzt
-
-    if (system_fd < 0) return FALSE; // kein fd - Rückgabe false
-    close(system_fd);
-    g_print("[%s] [SYSTEM-INHIBIT] Inhibit closed (fd=%d)\n", time_stamp(), system_fd);
-    system_fd = -1;
-    return TRUE; // erfolgreich beendet - Rückgabe true
-}
+/* ----- Standby Prevention ------------------------------------------ */
+// Ausgelagert!
+// detect_desktop();
+// start_gnome_inhibit();
+// start_system_inhibit();
+// stop_gnome_inhibit(error);
+// stop_system_inhibit(error);
 
 /* --- START-Wrapper --- ausgelöst in on_activate ------------------- */
 static void start_standby_prevention(void)
@@ -287,23 +92,25 @@ static void start_standby_prevention(void)
     /* Entsprechende Funktion zur Umgebung starten: */
     DesktopEnvironment de = detect_desktop();
     if (de == DESKTOP_GNOME) start_gnome_inhibit();
+//    else
     start_system_inhibit(); // KDE, XFCE, MATE
 
     /* Toast-Message ausgeben: */
-     if (!g_cfg.start_in_fs) show_toast(_("Standby wird nun verhindert!")); // nicht anzeigen wenn g_cfg.start_in_fs=true
+    // nicht anzeigen wenn g_cfg.start_in_fs=true
+    if (!g_cfg.start_in_fs) show_toast(_("Standby wird nun verhindert!"));
 }
+
 /* --- STOP-Wrapper --- ausgelöst durch die Buttons ----------------- */
 static gboolean stop_standby_prevention(GError **error) 
-{ (void)error; // Bewusst noch ungenutzt
-
+{
     // stop_sp true/false Mechanik ist vorbereitet aber unfertig !!
 
     gboolean stop_sp = TRUE; // TRUE wenn kein Fehler
 
-    if (!stop_gnome_inhibit (error))
+    if (!stop_gnome_inhibit(error))
         stop_sp = FALSE;
 
-    if (!stop_system_inhibit (error))
+    if (!stop_system_inhibit(error))
         stop_sp = FALSE;
 
     if (stop_sp)
@@ -314,8 +121,6 @@ static gboolean stop_standby_prevention(GError **error)
 
     return stop_sp;
 }
-/* ------------------------------------------------------------------ */
-
 
 /* ----- Alle Timer stoppen! ---------------------------------------- */
 static void stop_all_timers(ScreensaverStruct *data)
@@ -957,7 +762,7 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     g_menu_append(menu, _("Einstellungen         "), "app.show-settings");
     g_menu_append(menu, _("Infos zu OLED Saver   "), "app.show-about");
     GtkPopoverMenu *menu_popover = GTK_POPOVER_MENU(
-        gtk_popover_menu_new_from_model(G_MENU_MODEL(menu)));
+               gtk_popover_menu_new_from_model(G_MENU_MODEL(menu)));
     gtk_menu_button_set_popover(menu_btn, GTK_WIDGET(menu_popover));
 
     /* --- ACTION für Einstellungen u. About-Dialog ------------------ */
@@ -1055,27 +860,27 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_vexpand(spacer, TRUE);
 
-    /* ----- Objekte der MainBOX hinzufügen -------------------------- */
+    /* ----- Objekte der MainBOX hinzufügen ------------------------- */
     gtk_box_append(main_box, label1);
     gtk_box_append(GTK_BOX(main_box), icon);
     gtk_box_append(GTK_BOX(main_box), spacer);              // Spacer
     gtk_box_append(main_box, chbx_box);                     // Checkbox-BOX hinzufügen
     gtk_box_append(GTK_BOX(main_box), buttons_box);
 
-    /* -----  Haupt-Box zur ToolbarView hinzufügen ------------------ */
+    /* -----  Haupt-Box zur ToolbarView hinzufügen ----------------- */
     adw_toolbar_view_set_content(toolbar_view, GTK_WIDGET(main_box));
 
     /* --- Dark-Mode erzwingen --- */
     AdwStyleManager *style_manager = adw_style_manager_get_default();
     adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
 
-    /* ----- Hauptfenster im Application-Objekt ablegen (!) --------- */
+    /* ----- Hauptfenster im Application-Objekt ablegen (!) ------- */
     g_object_set_data(G_OBJECT(app), "main-window", GTK_WINDOW(adw_win));
 
-    /* ----- Hauptfenster desktop‑konform anzeigen ------------------ */
+    /* ----- Hauptfenster desktop‑konform anzeigen ---------------- */
     gtk_window_present(GTK_WINDOW(adw_win));
 
-    /* +++++ Funktion zum umgehen der Standbyzeit starten ++++++++++++ */
+    /* +++++ Funktion zum umgehen der Standbyzeit starten +++++++++ */
     start_standby_prevention();
 
     /* Settings: start_in_fs = true:   */
@@ -1085,9 +890,9 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     }
 }
 
-/* --------------------------------------------------------------------------- */
-/* Anwendungshauptteil, main()                                                 */
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
+/* Anwendungshauptteil                                                 */
+/* ------------------------------------------------------------------- */
 int main(int argc, char **argv)
 {
     /* 0. Print nur für Terminalausgabe */
