@@ -14,9 +14,7 @@ finish-args:
   - --talk-name=org.freedesktop.login1                    # systemd-Inhibit
   - --talk-name=org.freedesktop.ScreenSaver               # anscheinend nicht in Flatpak zulässig!
   - --talk-name=org.gtk.vfs.*                             # erlaubt DBus mit GVfs zu reden
-#  - --filesystem=home                                     # (für Config nicht notwendig)
-#  - --talk-name=org.kde.Solid.PowerManagement.PolicyAgent # KDE Inhibit
-#  - --filesystem=home                                     # Zugriff auf USER-Daten
+#  - --filesystem=home                                     # Zugriff auf USER-Daten (für Config nicht notwendig)
 #  - --env=LC_ALL=C.UTF-8                                  # Lokalisierung
 #  - --own-name=org.freedesktop.ScreenSaver                # notwendig für DBus-Objekt unter diesem Namen
 #  - --own-name=free.basti.oledsaver                       # für App-DBus-Name
@@ -32,7 +30,7 @@ modules:
       - glib-compile-resources src/resources.xml --sourcedir=data/icons/ --generate-source --target=src/free.basti.oledsaver.gresource.c 
 
       # ----- Kompilieren der Anwendung -----
-      - gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o _build/bin/bastis-oledsaver src/main.c src/time_stamp.c src/log_file.c src/config.c src/free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1) -lm -Wall -Wextra -Wno-deprecated-declarations
+      - gcc $(pkg-config --cflags gtk4 libadwaita-1 dbus-1) -o _build/bin/bastis-oledsaver src/main.c src/time_stamp.c src/stby_prev.c src/log_file.c src/config.c src/free.basti.oledsaver.gresource.c $(pkg-config --libs gtk4 libadwaita-1 dbus-1) -lm -Wall -Wextra -Wno-deprecated-declarations
 
       # ----- Warunungen unterdrücken -----
       
@@ -48,7 +46,7 @@ modules:
       - install -D -m 0644 packaging/free.basti.oledsaver.svg /app/share/icons/hicolor/scalable/apps/free.basti.oledsaver.svg
       - install -D -m 0644 packaging/128px.png /app/share/icons/hicolor/128x128/apps/free.basti.oledsaver.png
       - install -D -m 0644 packaging/256px.png /app/share/icons/hicolor/256x256/apps/free.basti.oledsaver.png
-      - install -D -m 0644 packaging/oledsaver_preview_img2.png /app/share/pixmaps/oledsaver_preview_img2.png
+      - install -D -m 0644 packaging/oledsaver_preview_img_light1.png /app/share/pixmaps/oledsaver_preview_img_light1.png
       - install -D -m 0644 packaging/free.basti.oledsaver.svg /app/share/pixmaps/free.basti.oledsaver.svg
       - install -D -m 0644 _build/share/locale/en_US/LC_MESSAGES/bastis-oledsaver.mo /app/share/locale/en_US/LC_MESSAGES/bastis-oledsaver.mo
       - install -D -m 0644 _build/share/locale/en_GB/LC_MESSAGES/bastis-oledsaver.mo /app/share/locale/en_GB/LC_MESSAGES/bastis-oledsaver.mo

@@ -32,12 +32,12 @@
   <screenshots>
       <screenshot type="default">
         <caption>OLED Saver main window</caption>
-        <image type="source">https://raw.githubusercontent.com/super-toq/OLED-Saver/refs/heads/main/packaging/oledsaver_preview_img2.png</image>
+        <image type="source">https://raw.githubusercontent.com/super-toq/OLED-Saver/refs/heads/main/packaging/oledsaver_preview_img_light1.png</image>
     </screenshot>
   </screenshots> 
   <!-- Releases Information  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    -->
 <releases>
-  <release version="1.2.1" date="2026-01-11">
+  <release version="1.2.2" date="2026-01-15">
     <description>
       <p>This release includes improvements an fixes for a better user experience. </p>
       <ul>
