@@ -11,7 +11,7 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.2.2"//_0
+#define APP_VERSION    "1.2.2"//_1
 #define APP_ID         "free.basti.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
@@ -72,7 +72,7 @@ static void show_toast(const char *msg)
         return;
 
     AdwToast *toast = adw_toast_new(msg);
-    adw_toast_set_timeout(toast, 1.5); // Sekunden
+    adw_toast_set_timeout(toast, 2); // Sekunden
     adw_toast_set_priority(toast, ADW_TOAST_PRIORITY_HIGH);
     adw_toast_overlay_add_toast(toast_manager.toast_overlay, toast);
 }
@@ -100,7 +100,7 @@ static void start_standby_prevention(void)
     if (!g_cfg.start_in_fs) show_toast(_("Standby wird nun verhindert!"));
 }
 
-/* --- STOP-Wrapper --- ausgelöst durch die Buttons ----------------- */
+/* --- STOP-Wrapper --- ausgelöst durch Schaltflächen --------------- */
 static gboolean stop_standby_prevention(GError **error) 
 {
     // stop_sp true/false Mechanik ist vorbereitet aber unfertig !!
@@ -690,10 +690,10 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
                             ".opaque.custom-suggested-action-button1 {" // Blackscreen-btn
-                                         "  background-color: #c0bfbc;"
-                                                      "  color: black;"
+                                         "  background-color: #c0bfbc;" // Grau
+                                                    "  color: #000000;"
                                                                     "}"
-                            ".opaque.custom-suggested-action-button2 {"
+                            ".opaque.custom-suggested-action-button2 {" // Beenden-btn
                                          "  background-color: #434347;"
                                                     "  color: #ff8484;"
                                                                     "}"
@@ -726,14 +726,14 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     GtkWidget *title_label = gtk_label_new("Basti's OLED Saver");
     gtk_widget_add_css_class(title_label, "heading");
     adw_header_bar_set_title_widget(headerbar, title_label);
-    adw_toolbar_view_add_top_bar(toolbar_view, GTK_WIDGET(headerbar));      // Headerbar in ToolbarView
+    adw_toolbar_view_add_top_bar(toolbar_view, GTK_WIDGET(headerbar));        // Headerbar in ToolbarView
 
     /* --- Hauptseite in NavigationView ------------------------------ */
     AdwNavigationPage *main_page = adw_navigation_page_new(GTK_WIDGET(toolbar_view), APP_NAME);
-    adw_navigation_view_push(nav_view, main_page);                         // NavView als MainPage
+    adw_navigation_view_push(nav_view, main_page);                            // NavView als MainPage
 
     /* ----- ToastOverlay -------------------------------------------- */
-    //toast_overlay = ADW_TOAST_OVERLAY(adw_toast_overlay_new());
+    //toast_overlay = ADW_TOAST_OVERLAY(adw_toast_overlay_new());             // vorherige Methode!
     //adw_toast_overlay_set_child(toast_overlay, GTK_WIDGET(nav_view));
     toast_manager.toast_overlay = ADW_TOAST_OVERLAY(adw_toast_overlay_new()); // ToastOverlay in Strukt.
     adw_toast_overlay_set_child(toast_manager.toast_overlay, GTK_WIDGET(nav_view));
@@ -766,25 +766,19 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     gtk_menu_button_set_popover(menu_btn, GTK_WIDGET(menu_popover));
 
     /* --- ACTION für Einstellungen u. About-Dialog ------------------ */
-    const GActionEntry about_entry[] = {
+    const GActionEntry about_entry[] = 
     {
-        "show-about", // Bezeichnung    - einmalig er GActionMap
-        show_about,   // Activate       - Funktion wenn ausgelöst
-        NULL,         // Parameter_type - welcher Datentyp erwartet werden soll
-        NULL,         // State          - Zustand und Zustand-typ(b,s,i,d)
-        NULL,         // Change_state   - für Callback wenn sich state ändert
-        { 0 }         // Padding        - Erweiterungsfeld
-    }
+        { "show-about", // Bezeichnung    - einmalig er GActionMap
+            show_about, // Activate       - Funktion wenn ausgelöst
+                  NULL, // Parameter_type - welcher Datentyp erwartet werden soll
+                  NULL, // State          - Zustand und Zustand-typ(b,s,i,d)
+                  NULL, // Change_state   - für Callback wenn sich state ändert
+                  { 0 } // Padding        - Erweiterungsfeld
+        }
     }; 
-    const GActionEntry settings_entry[] = {
+    const GActionEntry settings_entry[] = 
     {
-        "show-settings",
-        show_settings,
-        NULL,
-        NULL,
-        NULL,
-        { 0 }
-    }
+        { "show-settings", show_settings, NULL, NULL, NULL, { 0 } }
     };
     /* Registrierung der im Array about_entry definierten Aktionen */ 
     g_action_map_add_action_entries(G_ACTION_MAP(app), 
@@ -837,6 +831,8 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     //gtk_widget_add_css_class(setfullscreen_button, "suggested-action");
     gtk_widget_add_css_class(setfullscreen_button, "custom-suggested-action-button1"); // CSS-Provider...
     gtk_widget_add_css_class(setfullscreen_button, "opaque"); // durchsichtig
+    gtk_widget_set_size_request(setfullscreen_button, 140, 48);  // Breite 100, Höhe 50px
+
 
     /* ----- Schaltfläche Beenden ------------------------------------ */
     GtkWidget *quit_button = gtk_button_new_with_label(_("  Beenden  "));
@@ -845,6 +841,8 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     gtk_widget_add_css_class(quit_button, "custom-suggested-action-button2"); // CSS-Provider...
     gtk_widget_add_css_class(quit_button, "opaque"); // durchsichtig,
     //gtk_widget_add_css_class(quit_button, "destructive-action");
+    gtk_widget_set_size_request(quit_button, 140, 48);  // Breite 100, Höhe 50
+
 
     /* --- Schaltflächen verbinden und "app" übergeben --------------- */
     g_signal_connect(setfullscreen_button, "clicked", G_CALLBACK(on_fullscreen_button_clicked), app);
