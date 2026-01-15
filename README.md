@@ -1,4 +1,6 @@
-## Basti's OLED-Saver
+<img src="packaging/free.basti.oledsaver.svg" height="128">
+
+# Basti's OLED-Saver
 Basti's OLED-Saver is a small tool that tries to prevent the device from standby, automatic suspending, screen blanking and screen locking. You can display a black fullscreen to protect the OLED from burn-in.
 
 ![oledsaver](oledsaver_preview_img1.png?raw=true) 
