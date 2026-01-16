@@ -11,7 +11,7 @@
   <!-- Lizenz -->
   <project_license>BSD-2-Clause</project_license>
   <summary>Standby Prevention Tool and Screen Saver for OLED Displays</summary>
-  <url type="homepage">https://github.com/super-toq/OLED-Saver</url>
+  <url type="homepage">https://github.com/supertoq/OLED-Saver</url>
   <icon type="stock">io.github.supertoq.oledsaver</icon>
   <!-- Beschreibung -->
   <description>
@@ -32,12 +32,12 @@
   <screenshots>
       <screenshot type="default">
         <caption>OLED Saver main window</caption>
-        <image type="source">https://raw.githubusercontent.com/super-toq/OLED-Saver/refs/heads/main/packaging/oledsaver_preview_img_light1.png</image>
+        <image type="source">https://raw.githubusercontent.com/supertoq/OLED-Saver/refs/heads/main/packaging/oledsaver_preview_img_light1.png</image>
     </screenshot>
   </screenshots> 
   <!-- Releases Information  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    -->
 <releases>
-  <release version="1.2.2" date="2026-01-15">
+  <release version="1.2.3" date="2026-01-16">
     <description>
       <p>This release includes improvements an fixes for a better user experience. </p>
       <ul>
@@ -46,9 +46,9 @@
     </description>
   </release>
   <!-- Previous Releases  -->
-  <release version="1.1.5" date="2026-01-09" />
+<!--  <release version="1.1.5" date="2026-01-09" />
   <release version="1.1.0" date="2026-01-07" />
-  <release version="1.0" date="2025-11-21" />
+  <release version="1.0" date="2025-11-21" /> -->
 </releases>
 
   <content_rating type="oars-1.1" />
@@ -58,8 +58,8 @@
     <binary>bastis-oledsaver</binary>
   </provides>
   <!-- Entwickler -->
-  <developer id="free.toq">
-    <name>super-toq</name>
+  <developer id="io.github.supertoq">
+    <name>supertoq</name>
   </developer>
 
 </component>
