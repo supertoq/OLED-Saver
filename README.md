@@ -1,7 +1,7 @@
 <img src="packaging/io.github.supertoq.oledsaver.svg" height="128">
 
-# Basti's OLED-Saver
-Basti's OLED-Saver is a small tool that tries to prevent the device from standby, automatic suspending, screen blanking and screen locking. You can display a black fullscreen to protect the OLED from burn-in.
+# Basti's OLED Saver
+Basti's OLED Saver is a small tool that tries to prevent the device from standby, automatic suspending, screen blanking and screen locking. You can display a black fullscreen to protect the OLED from burn-in.
 
 ![oledsaver main window](data/img/oledsaver_preview_img1.png?raw=true) 
   
@@ -10,8 +10,8 @@ Basti's OLED-Saver is a small tool that tries to prevent the device from standby
 This app was created at the request of good buddy.  
   
   
-### Installation:  
-The quickest way to install OLED‑Saver is to download the application from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
+## Installation:  
+The quickest way to install OLED Saver is to download the application from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
 Installation proceeds as follows:  
 ```
 cd ~/Downloads  
@@ -23,7 +23,7 @@ flatpak install -y --user io.github.supertoq.oledsaver.flatpak
 You can also build the application yourself from the transparent source code; here’s one way using Flatpak Builder.
 
   
-### Building and Installing with Flatpak Builder.  
+## Building and Installing with Flatpak Builder.  
 
 ### Preparation and Dev Depentencies:
   
@@ -52,9 +52,9 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 flatpak install org.gnome.Sdk/x86_64/49
 ```  
   
-### Install OLED-Saver:
+## Install OLED Saver:
   
-#### Clone repository:  
+### Clone repository:  
 ```
 git clone https://github.com/supertoq/OLED-Saver.git 
 ```  
@@ -66,12 +66,12 @@ cd OLED-Saver
 flatpak-builder --user --install --force-clean _build-dir io.github.supertoq.oledsaver.yml 
 ```  
   
-### Run the OLED-Saver:  
+## Run the OLED Saver:  
 ```
 flatpak run io.github.supertoq.oledsaver 
 ```  
   
-### If you want to uninstall OLED-Saver:  
+## If you want to uninstall OLED Saver:  
 ```
 flatpak uninstall -y io.github.supertoq.oledsaver 
 ```  
