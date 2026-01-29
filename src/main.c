@@ -11,7 +11,7 @@
  * The Use of this code and execution of the applications is at your own risk, I accept no liability!
  *
  */
-#define APP_VERSION    "1.3.0"//_0
+#define APP_VERSION    "1.3.1"//_0
 #define APP_ID         "io.github.supertoq.oledsaver"
 #define APP_NAME       "OLED Saver"
 #define APP_DOMAINNAME "bastis-oledsaver"
@@ -52,15 +52,21 @@ static const PixelOption pixel_options[] = {
 
 typedef struct {             // Screensafer Struktur
     GtkWindow                *fullscreen_window;  // Screensaver Vollbild
+    GtkWidget                *focus_widget;       // Kind-Widget vom Vollbildfenster
     GtkEventController       *key_controller;     // Event-Controller für Taste
     GtkEventController       *motion_controller;  // Event-Controller für motion
-    guint                    timeout_id;          // Timer-ID zum stoppen von g_timeout_add_seconds(), zukünftig !!
     gboolean                 motion_initialized;  // Bewegungs-initialisierung für mouse_move_limit
     guint                    fullscreen_timer_id; // Timer (guint vergibt die ID zum beenden)
+    gboolean                 motion_init_phase;   // Init-Phase in der Motion ignoriert werden
+    gint64                   motion_start_time;   // Startzeit (monotonic time)
+    gdouble                  motion_last_x;       // letzte Mauskoordinaten
+    gdouble                  motion_last_y;
+    gdouble                  motion_total_distance; // Summierte Motion-Distanz
+    gboolean                 exit_pending;        // Beendigungsprozess läuft bereits, nicht mehrfach schließen
 } ScreensaverStruct;
 
 typedef struct {            // Hauptfenster Struktur
-    ScreensaverStruct       *SData;               // MainWindowStruct beinhaltet ebenfalls ScreensaverStruct !!
+//    ScreensaverStruct       *SData;               // MainWindowStruct beinhaltet ebenfalls ScreensaverStruct !!
     AdwApplicationWindow    *main_window;         // Hauptfenster
     AdwNavigationView       *nav_view;            // NavigationView
     AdwToastOverlay         *toast_overlay;       // Pointer auf die AdwToastOverlay
@@ -79,7 +85,7 @@ static void show_toast(MainWindowStruct *WData, const char *msg)
         return;
 
     AdwToast *toast = adw_toast_new(msg);
-    adw_toast_set_timeout(toast, 2); // Sekunden
+    adw_toast_set_timeout(toast, 1); // Sekunden
     adw_toast_set_priority(toast, ADW_TOAST_PRIORITY_HIGH);
     adw_toast_overlay_add_toast(WData->toast_overlay, toast);
 }
@@ -101,7 +107,7 @@ static void start_standby_prevention(MainWindowStruct *WData)
     switch (de)
     {   case DESKTOP_GNOME:
             start_gnome_inhibit();
-            if (g_cfg.always_sys_ib) { // Config: system-ib in Gnome anwenden
+            if (!g_cfg.sys_ib_off) { // Config: system-ib in Gnome ausschalten
                 start_system_inhibit();
             }
             break;
@@ -143,21 +149,22 @@ static gboolean stop_standby_prevention(GError **error)
     return stop_sp;
 }
 
+// aktuell inaktiv:
 /* ----- Alle Timer stoppen! ---------------------------------------- */
-static void stop_all_timers(ScreensaverStruct *SData)
-{
-    /* Struktur auf Gültigkeit prüfen */
-    if (!SData) return;
-
-    /* wenn Timer existiert, stoppen. (Grundlage für weitere Timer) - */
-    if (SData->fullscreen_timer_id) {
-        g_source_remove(SData->fullscreen_timer_id);
-        SData->fullscreen_timer_id = 0;
-    }
-
-    /* Timer2 hier ... */
-
-}
+//static void stop_all_timers(ScreensaverStruct *SData)
+//{  
+//    /* Struktur auf Gültigkeit prüfen */
+//    if (!SData) return;
+//
+//    /* wenn Timer existiert, stoppen. (Grundlage für weitere Timer) - */
+//    if (SData->fullscreen_timer_id) {
+//        g_source_remove(SData->fullscreen_timer_id);
+//        SData->fullscreen_timer_id = 0;
+//    }
+//
+//    /* Timer2 hier ... */
+//
+//}
 
 /* ----- Fullscreen-Fenster Beenden --------------------------------- */
 static gboolean exit_screensaver(gpointer user_data)
@@ -168,15 +175,15 @@ static gboolean exit_screensaver(gpointer user_data)
 
     /* 1. Mögliche Kontroller schließen () */
     if (SData->key_controller)
-        gtk_widget_remove_controller(GTK_WIDGET(SData->fullscreen_window), SData->key_controller);
+        gtk_widget_remove_controller(GTK_WIDGET(SData->focus_widget), SData->key_controller);
     if (SData->motion_controller)
-        gtk_widget_remove_controller(GTK_WIDGET(SData->fullscreen_window), SData->motion_controller);
+        gtk_widget_remove_controller(GTK_WIDGET(SData->focus_widget), SData->motion_controller);
 
     /* 2. Fenster schließen */
     gtk_window_close(SData->fullscreen_window);
 
     /* 3. Alle möglichen Timer beenden */
-    stop_all_timers(SData); // SData wird in Funktion erwartet
+//    stop_all_timers(SData); // SData wird in Funktion erwartet  // aktuell nur existiert nur ein Timer !!
     
     /* 4. Aufräumen */
     g_free(SData);
@@ -185,7 +192,6 @@ static gboolean exit_screensaver(gpointer user_data)
 
 static void quit_process(void)
 {
-//    MainWindowStruct *WData = user_data;
     GError *error = NULL;
     gboolean stopping;
 
@@ -214,78 +220,84 @@ static void quit_process(void)
 
 /* ----- Mausbewegung beendet Fullscreen Fenster, 
             aktiviert von on_fullscreen_button_clicked -------------- */
-static gboolean on_fullscreen_by_motion(GtkEventControllerMotion *controller, gdouble x, gdouble y, gpointer user_data)
+void on_fullscreen_by_motion(GtkEventControllerMotion *controller,
+                                        gdouble x, gdouble y, gpointer user_data)
 { (void)controller; // erwartete Signatur
 
 
     /* 0. Daten aus ScreensaverStruktur */
     ScreensaverStruct *SData = user_data;
+    if (!SData || !SData->fullscreen_window) return;
 
-    /* 1. Prüfung auf vorhandene Strukt und Fenster-Gültigkeit */
-    if (!SData || !SData->fullscreen_window) return GDK_EVENT_STOP;
+    const gint64  ignore_duration = 800000; // µs
+    const gdouble threshold = CLAMP(g_cfg.mouse_move_limit, 50.0, 500.0);
 
-    const  gint64   ignore_duration  = 800000; // 1000000 µs = 1 Sekunde
-    const  gdouble  threshold        = CLAMP(g_cfg.mouse_move_limit, 50.0, 500.0);
-
-    static gboolean init_phase       = TRUE;   // Puffer-Phase aktiv/beendet
-    static gint64   start_time       = 0;       // Zeit des Fensters-Starts
-    static gdouble  total_distance   = 0.0;     // akkumulierte Distanz
-    static gdouble  last_x           = 5.0;
-    static gdouble  last_y           = 5.0;
-
-    /* 2. Fensterstart = Startzeit */
-    if (start_time == 0) 
-    {
-        /* 2.1 Startzeit speichern */
-        start_time = g_get_monotonic_time(); // GLib's Monotonic Clock als Zeitgeber für Anfangsbewegung
-        last_x = x;
-        last_y = y;
-        return GDK_EVENT_STOP;
+    /* 1. Bei Startzeitpunt: Ausgangswerte setzen */
+    if (SData->motion_start_time == 0) {
+        SData->motion_start_time = g_get_monotonic_time();
+        SData->motion_init_phase = TRUE;
+        SData->motion_total_distance = 0.0;
+        SData->motion_last_x = x;
+        SData->motion_last_y = y;
+        SData->exit_pending = FALSE;
+        return;
     }
 
     /* 3. Puffer für Anfangsbewegung */
-    if (init_phase) { // initialized phase = true
+    if (SData->motion_init_phase) { // initialized phase = true
         /* 3.1 Jetziger Zeitpunkt */
         gint64 now = g_get_monotonic_time();
-        if (now - start_time < ignore_duration) // Anfangs-Bewegung für unter 1 Sek. ignoriert.
+
+        if (now - SData->motion_start_time < ignore_duration) // Anfangs-Bewegung für unter 1 Sek. ignoriert.
         { 
             /* 3.2 Koor.punkte speichern */
-            last_x = x;
-            last_y = y;
-            return GDK_EVENT_STOP;
+            SData->motion_last_x = x;
+            SData->motion_last_y = y;
+            return;
         }
-        /* 3.2 Pufferzeit vorbei */
-        init_phase = FALSE;
-        return GDK_EVENT_STOP; // aktuelles Event, welches den Puffer beendet, wird nicht zur Distanz addiert
+        /* 3.3 Pufferzeit vorbei */
+        SData->motion_init_phase = FALSE;
+        return; // aktuelles Event, welches den Puffer beendet, wird nicht zur Distanz addiert
     }
 
     /* 4. Gesamtdistanz seit letzten Event (Formel für Bewegung in 2D Raum) */
-    gdouble dx = x - last_x;
-    gdouble dy = y - last_y;
-    //total_distance += sqrt(dx * dx + dy * dy);   // sqrt = Quadratwurzelberechnung [ d=(x2​−x1​)2+(y2​−y1​)2 ]
-    total_distance = sqrt(dx * dx + dy * dy); // ohne Summierung!
+    gdouble dx = x - SData->motion_last_x;
+    gdouble dy = y - SData->motion_last_y;
+                                            // sqrt = Quadratwurzelberechnung [ d=(x2​−x1​)2+(y2​−y1​)2 ]
+    gdouble dist = sqrt(dx * dx + dy * dy); // Keine Summierung, nur Distanz vom letzen Event!
 
     /* 5. Schwellenwert prüfen und bei entspr. Motion weiter zum Beenden... */
-    if (total_distance < threshold) {
-        return GDK_EVENT_STOP;
-    }
+    if (dist < threshold) return;
+
+    
+//    if (SData->motion_total_distance < threshold) {
+//        return;
+//    }
+
+    /* 5 Exit darf nur einmal */
+    if (SData->exit_pending) return;
+    SData->exit_pending = TRUE;
 
     /* 6. Timer beenden:  (>0 heißt, es existiert eine ID vom Typ guint)*/
     if (SData->fullscreen_timer_id > 0) {
         g_source_remove(SData->fullscreen_timer_id);
         SData->fullscreen_timer_id = 0;
     }
-    /* 6.2 Ausgangswerte zurückstellen */
-    init_phase     = TRUE;
-    start_time     =    0;
-    total_distance =  0.0;
+    /* 7.  Ausgangswerte zurückstellen */
+    SData->motion_init_phase     = TRUE;
+    SData->motion_start_time     =    0;
+    SData->motion_total_distance =  0.0;
 
-    /* 7. Fullscreen-Fenster (einmal) schließen */
+    /* 8. Controller sofort trennen (Zeitraum von jetzt bis einschl. g_idle_add Prozetur) */
+    if (SData->motion_controller) {
+        gtk_widget_remove_controller(GTK_WIDGET(SData->focus_widget), SData->motion_controller);
+        SData->motion_controller = NULL;
+    }
+
+    /* 9. Fullscreen-Fenster (einmal) schließen */
     g_idle_add(exit_screensaver, SData);
     g_print("[%s] [INFO] Mouse motion exits fullscreen\n", time_stamp());
-
-    //if (g_cfg.quit_key) quit_process(); // Wenn Config Key, Anwendung hier beenden
-    return GDK_EVENT_STOP;
+    return;
 
 }
 
@@ -315,7 +327,7 @@ static gboolean on_fullscreen_by_key(GtkEventControllerKey *controller,
                                                     GDK_KEY_Up
                                                     GDK_KEY_F1             */
 
-    if (keyval !=GDK_KEY_space && keyval !=GDK_KEY_Escape ) return GDK_EVENT_STOP;
+    if (keyval !=GDK_KEY_space && keyval !=GDK_KEY_Escape ) return FALSE;
 
     /* Leertaste */
     if (keyval == GDK_KEY_space)
@@ -331,8 +343,8 @@ static gboolean on_fullscreen_by_key(GtkEventControllerKey *controller,
         //exit_screensaver(SData);
         g_print("[%s] [INFO] Key(space) press exits fullscreen\n", time_stamp());
 
-        /* Option zum beenden App mit der Leertaste */
-        if (g_cfg.quit_key) quit_process(); // Wenn Config Key, Anwendung hier beenden
+        /* Anwendung Beenden, bei Option: */
+        if (g_cfg.quit_key) quit_process(); // Bei Config Key, Anwendung hier beenden
     }
 
     /* Escape Taste */
@@ -345,8 +357,13 @@ static gboolean on_fullscreen_by_key(GtkEventControllerKey *controller,
             SData->fullscreen_timer_id = 0;   // auf 0 stellen
         }
 
+    /* Controller sofort trennen (Zeitraum von jetzt bis einschl. g_idle_add Prozetur) */
+    if (SData->motion_controller) {
+        gtk_widget_remove_controller(GTK_WIDGET(SData->focus_widget), SData->motion_controller);
+        SData->motion_controller = NULL;
+    }
+        /* 9. Fullscreen-Fenster schließen */
         g_idle_add(exit_screensaver, SData);
-        //exit_screensaver(SData);
         g_print("[%s] [INFO] Key(escape) press exits fullscreen\n", time_stamp());
     }
 
@@ -443,6 +460,18 @@ static void open_log_folder(GtkButton *button, gpointer user_data)
     }
 }
 
+/* ----- Keep-Window-On-Top - Toggle ------------------------------------------------------ */
+static void on_keep_check_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
+{ (void)pspec; (void)user_data; // bewusst unbenutzt
+
+    GtkCheckButton *keep_check = GTK_CHECK_BUTTON(object);
+    gboolean active = gtk_check_button_get_active(GTK_CHECK_BUTTON(keep_check));
+    g_cfg.keep_wot = active;
+    save_config(); // speichern
+    if (g_cfg.adv_debug_opt) g_print("[%s] [DEBUG] Settings: keep_wot=%s\n", time_stamp(), g_cfg.keep_wot ? "true" : "false"); // zum testen !!
+
+
+}
 /* ----- In Einstellungen: Schalter1-Toggle (AdwSwitchRow)--------------------------------- */
 static void on_settings_use_key_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
 { (void)pspec;
@@ -462,22 +491,28 @@ static void on_settings_use_key_switch_row_toggled(GObject *object, GParamSpec *
 static void on_settings_start_in_fs_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
 { (void)pspec; (void)user_data;
 
+    MainWindowStruct *WData = user_data;
+
     AdwSwitchRow *start_in_fs_switch = ADW_SWITCH_ROW(object); 
     gboolean active = adw_switch_row_get_active(start_in_fs_switch);
     g_cfg.start_in_fs = active;
     save_config(); // speichern
-    if (g_cfg.adv_debug_opt) g_print("[%s] [DEBUG] Settings: start_in_fs=%s\n", time_stamp(), g_cfg.start_in_fs ? "true" : "false"); // zum testen !!
+    if (g_cfg.adv_debug_opt) g_print("[%s] [DEBUG] Settings: start_in_fs=%s\n", 
+                               time_stamp(), g_cfg.start_in_fs ? "true" : "false"); // zum testen !!
+    show_toast(WData, g_cfg.start_in_fs ? _("Screensaver-Mode bei Neustart") : _("Modus deaktiviert"));
 }
 /* ----- In Einstellungen: Schalter3-Toggle (AdwSwitchRow) ------------ */
-static void on_settings_always_sys_ib_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
+static void on_settings_sys_ib_off_switch_row_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
 { (void)pspec;
 
-    AdwSwitchRow *always_sys_ib = ADW_SWITCH_ROW(object); 
-    gboolean active = adw_switch_row_get_active(always_sys_ib);
-    g_cfg.always_sys_ib = active;
-    save_config(); // speichern
-    if (g_cfg.adv_debug_opt) g_print("[%s] [DEBUG] Settings: always_sys_ib=%s\n", time_stamp(), g_cfg.always_sys_ib ? "true" : "false"); // zum testen !!
     MainWindowStruct *WData = user_data;
+
+    AdwSwitchRow *sys_ib_off = ADW_SWITCH_ROW(object); 
+    gboolean active = adw_switch_row_get_active(sys_ib_off);
+    g_cfg.sys_ib_off = active;
+    save_config(); // speichern
+    if (g_cfg.adv_debug_opt) g_print("[%s] [DEBUG] Settings: sys_ib_off=%s\n", 
+                              time_stamp(), g_cfg.sys_ib_off ? "true" : "false"); // zum testen !!
     show_toast(WData, _("Neustart erforderlich!"));
 }
 /* ----- In Einstellungen: Schalter4-Toggle (AdwSwitchRow) --------- */
@@ -532,7 +567,7 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
 
     /* ----- PreferencesGroup1 erstellen ----- */
     AdwPreferencesGroup *settings_group1 = ADW_PREFERENCES_GROUP(adw_preferences_group_new());
-    adw_preferences_group_set_title(settings_group1, _("Blackscreen-Modus"));
+    adw_preferences_group_set_title(settings_group1, _("Screensaver-Modus"));
     //adw_preferences_group_set_description(settings_group1, _("Zusatzbeschreibung - Platzhalter"));
 
     /* ----- PreferencesGroup2 erstellen ----- */
@@ -542,7 +577,7 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     /* ----- Combo Row erstellen ------------------------------------------------------------------- */
     WData->combo_row1 = adw_combo_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(WData->combo_row1), 
-                                                    _("Minimalbewegungen zulassen"));
+                                                    _("Mausbewegung beendet Screensaver"));
     adw_action_row_set_subtitle(ADW_ACTION_ROW(WData->combo_row1),
      _("Mausbewegungsschwelle in Pixeln"));
 
@@ -569,7 +604,7 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(switch_row1), 
                                                     _("Leertaste verwenden"));
     adw_action_row_set_subtitle(ADW_ACTION_ROW(switch_row1),
-     _("Verwende die Leertaste anstelle der Maus, um den Blackscreen-Modus zu beenden"));
+     _("Verwende die Leertaste anstelle der Maus, um den Screensaver zu schließen"));
     /* Schalter-Aktivierung abhängig von gesetzten g_cfg.-Wert: */
     adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row1), g_cfg.use_key);
     gtk_widget_set_sensitive(GTK_WIDGET(switch_row1), TRUE);    //In- /Aktiv
@@ -579,7 +614,7 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(WData->switch_row4), 
                                                     _("Anwendung beenden"));
     adw_action_row_set_subtitle(ADW_ACTION_ROW(WData->switch_row4),
-     _("Das Beenden des Blackscreens-Modus, beendet auch die Anwendung"));
+     _("Das Schließen des Screensavers, schließt auch die Anwendung"));
     /* Schalter-Aktivierung abhängig von gesetzten g_cfg.-Wert: */
     adw_switch_row_set_active(ADW_SWITCH_ROW(WData->switch_row4), g_cfg.quit_key);
     // Schalter-De/Aktivierung abhängig von cfg.use_key:
@@ -588,9 +623,9 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     /* ----- AdwSwitchRow2 erzeugen --------- */
     AdwSwitchRow *switch_row2 = ADW_SWITCH_ROW(adw_switch_row_new());
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(switch_row2), 
-                                                    _("Im Blackscreen-Modus starten"));
+                                                    _("Mit aktiven Screensaver starten"));
     adw_action_row_set_subtitle(ADW_ACTION_ROW(switch_row2),
-     _("Anwendung direkt mit Blackscreen-Modus starten"));
+     _("Anwendung direkt mit aktiven Screensaver starten"));
     /* Schalter-Aktivierung abhängig von gesetzten g_cfg.-Wert: */
     adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row2), g_cfg.start_in_fs);
     gtk_widget_set_sensitive(GTK_WIDGET(switch_row2), TRUE);    //In- /Aktiv
@@ -598,11 +633,11 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     /* ----- AdwSwitchRow3 erzeugen --------- */
     AdwSwitchRow *switch_row3 = ADW_SWITCH_ROW(adw_switch_row_new());
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(switch_row3), 
-                                                    _("In Gnome Desktop ..."));
+                                                    _("System-Inhibit"));
     adw_action_row_set_subtitle(ADW_ACTION_ROW(switch_row3),
-     _("Gnome-Inhibit und System-Inhibit verwenden"));
+     _("System-Inhibit in Gnome Desktop deaktivieren"));
     /* Schalter-Aktivierung abhängig von gesetzten g_cfg.-Wert: */
-    adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row3), g_cfg.always_sys_ib);
+    adw_switch_row_set_active(ADW_SWITCH_ROW(switch_row3), g_cfg.sys_ib_off);
     gtk_widget_set_sensitive(GTK_WIDGET(switch_row3), TRUE); //In- /Aktiv
 
     /* ----- ActionRow für Debug-File erstellen --(ab Version 1.1.5)--------------- Action ROW ------ */
@@ -628,15 +663,15 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
 
     /* ----- Schalter verbinden --------------------------------- */
     g_signal_connect(switch_row1,       "notify::active",               // use_key
-                                  G_CALLBACK(on_settings_use_key_switch_row_toggled), WData); // combo_row1 de/aktivieren
+                                  G_CALLBACK(on_settings_use_key_switch_row_toggled),     WData); // combo_row1 de/aktivieren
     g_signal_connect(switch_row2,       "notify::active",               // start_in_fs
-                                  G_CALLBACK(on_settings_start_in_fs_switch_row_toggled),   NULL);
-    g_signal_connect(switch_row3,       "notify::active",               // always_sys_ib
-                                  G_CALLBACK(on_settings_always_sys_ib_switch_row_toggled), NULL);
+                                  G_CALLBACK(on_settings_start_in_fs_switch_row_toggled), WData);
+    g_signal_connect(switch_row3,       "notify::active",               // sys_ib_off
+                                  G_CALLBACK(on_settings_sys_ib_off_switch_row_toggled),  WData);
     g_signal_connect(WData->switch_row4,       "notify::active",               // quit_key
-                                  G_CALLBACK(on_settings_quit_key_switch_row_toggled),      WData);
+                                  G_CALLBACK(on_settings_quit_key_switch_row_toggled),     NULL);
     g_signal_connect(log_enable_switch, "notify::active",               // log_enable 
-                                  G_CALLBACK(on_settings_log_enable_gtkswitch_toggled),     NULL);
+                                  G_CALLBACK(on_settings_log_enable_gtkswitch_toggled),    NULL);
 
     /* ----- Rows zur PreferencesGruppe hinzufügen ----- */
     adw_preferences_group_add(settings_group1, GTK_WIDGET(WData->combo_row1));
@@ -644,7 +679,7 @@ static void show_settings(GSimpleAction *action, GVariant *parameter, gpointer u
     adw_preferences_group_add(settings_group1, GTK_WIDGET(WData->switch_row4)); // SwitchRow  - quit
     adw_preferences_group_add(settings_group1, GTK_WIDGET(switch_row2)); // SwitchRow  - start_in_fs
     // Gruppe-Debug:
-    adw_preferences_group_add(settings_group2, GTK_WIDGET(switch_row3)); // SwitchRow  - always_sys_ib
+    adw_preferences_group_add(settings_group2, GTK_WIDGET(switch_row3)); // SwitchRow  - sys_ib_off
     adw_preferences_group_add(settings_group2, GTK_WIDGET(action_row));  // AchtionRow - log_enable
 
     if (!g_cfg.adv_debug_opt) gtk_widget_hide(GTK_WIDGET(switch_row3));
@@ -731,68 +766,83 @@ static void on_fullscreen_button_clicked(GtkButton *button, gpointer user_data)
             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
 
-    /* 1.3 Vollbild-Fenster erstellen */
+    /* 2 Vollbild-Fenster erstellen */
     GtkWidget *fullscreen_window = gtk_application_window_new(app);
 
-    /*  Transient + Modal, zwingen Child_window zu modalen Dialog */
+    /* 2.1 Transient + Modal, zwingen Child_window zu modalen Dialog */
     gtk_window_set_transient_for(GTK_WINDOW(fullscreen_window), GTK_WINDOW(WData->main_window));
-    /* App blockieren, solange Fenster besteht */
+    /* 2.2 App blockieren, solange Fenster besteht */
     gtk_window_set_modal(GTK_WINDOW(fullscreen_window), TRUE);
 
-    /* Fenstereigenschaften (Wayland konform) */
+    /* 2.3 Fenstereigenschaften (Wayland konform) */
     gtk_window_set_decorated(GTK_WINDOW(fullscreen_window), FALSE);
-    gtk_widget_add_css_class(fullscreen_window, "fullscreen-window");
-    gtk_window_set_resizable(GTK_WINDOW(fullscreen_window), FALSE);
     gtk_window_fullscreen(GTK_WINDOW(fullscreen_window));
+    gtk_widget_add_css_class(fullscreen_window, "fullscreen-window");
 
-    /* Child-Window zum Hauptfenster erstellen */
-    GtkWidget *focus_widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_widget_set_focusable(focus_widget, TRUE); // als fokusierbares Widget (Wayland)
-    gtk_window_set_child(GTK_WINDOW(fullscreen_window), focus_widget); 
-
-    /* 2. ----- Screensaver-Struktur initialisieren ----- */
+    /* 3. ----- Screensaver-Struktur initialisieren ----- */
     ScreensaverStruct *SData = g_new0(ScreensaverStruct, 1); 
     SData->fullscreen_window = GTK_WINDOW(fullscreen_window);
+    SData->motion_init_phase = TRUE;
+    SData->motion_start_time = 0;
+    SData->motion_last_x     = 0.0;
+    SData->motion_last_y     = 0.0;
+    SData->motion_total_distance = 0.0;
 
-    /* ButtonBox blockieren, doch diese wurde noch nicht übergeben !! Merkzettel */
-    //gtk_widget_set_sensitive(WData->button_box, FALSE);
+    /* 4. Child-Window erstellen */
+    SData->focus_widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    /* 4.1 Widget-Eigenschaften */
+    /* Dem Widget die ganze Fläche verfügbar machen */
+//    gtk_widget_set_hexpand(SData->focus_widget, TRUE);
+//    gtk_widget_set_vexpand(SData->focus_widget, TRUE);
+    gtk_widget_set_halign(SData->focus_widget, GTK_ALIGN_FILL);
+    gtk_widget_set_valign(SData->focus_widget, GTK_ALIGN_FILL);
 
-    /* 2.1 Unterbrecher für Fullscreen durch Key oder Mausbewegung */
+    /* 4.2 Focus-Eigenschaften (notwendig für KeyController) */
+    gtk_widget_set_focusable(SData->focus_widget, TRUE); // darf fokusiert werden (Wayland)
+    gtk_widget_set_can_focus(SData->focus_widget, TRUE); // darf jetzt fokusiert werden (Wayland)
+
+    /* 4.3 Widget für Pointer-Events sichtbar machen (MotionController)  */
+    gtk_widget_set_can_target(SData->focus_widget, TRUE);
+
+    /* 4.4 Das focus_widget zum Kind von fullscreen_window machen */
+    gtk_window_set_child(GTK_WINDOW(SData->fullscreen_window), SData->focus_widget); 
+
+
+    /* 5. Unterbrecher für Fullscreen durch Key oder Mausbewegung */
     if (g_cfg.use_key)  // config.c
     {
-        /* Key-Controller erstellen und ans focus_widget  */
+        /* 5.1 Key-Controller erstellen und auf das focus_widget setzen */
         SData->key_controller = gtk_event_controller_key_new();
         g_signal_connect(SData->key_controller, "key-pressed", G_CALLBACK(on_fullscreen_by_key), SData);
-        gtk_widget_add_controller(GTK_WIDGET(focus_widget), SData->key_controller);
+        gtk_widget_add_controller(GTK_WIDGET(SData->focus_widget), SData->key_controller);
     } else {
-            /* Motion-Controller erstellen und ans focus_widget  */
+            /* 5.2 Motion-Controller erstellen und auf das focus_widget setzen */
             SData->motion_controller = gtk_event_controller_motion_new();
+            gtk_event_controller_set_propagation_phase(
+                           SData->motion_controller, GTK_PHASE_CAPTURE); //Propagation-Phase auf CAPTURE setzen
             g_signal_connect(SData->motion_controller, "motion", G_CALLBACK(on_fullscreen_by_motion), SData);
-            gtk_widget_add_controller(GTK_WIDGET(focus_widget), SData->motion_controller);
+            gtk_widget_add_controller(GTK_WIDGET(SData->focus_widget), SData->motion_controller);
     }
 
-    /* 3. Fenster anzeigen */
+
+    /* 6. Fenster anzeigen */
     gtk_window_present(GTK_WINDOW(SData->fullscreen_window));
-    gtk_window_set_focus(GTK_WINDOW(SData->fullscreen_window), focus_widget); // Fokus auf Widget (Wayland)
+    /* 7. Fokus auf Widget erbitten (Wayland) */
+    gtk_window_set_focus(GTK_WINDOW(SData->fullscreen_window), SData->focus_widget);
 
     /* Debugging */
-    if (g_cfg.log_enable) g_print("[%s] [DEBUG] fullscreen focus=%d visible=%d\n", 
-                  time_stamp(), gtk_widget_has_focus(focus_widget), gtk_widget_get_visible(focus_widget));
+    if (g_cfg.log_enable) {
+       g_print("[%s] [DEBUG] fullscreen focus=%d visible=%d\n", 
+                  time_stamp(), gtk_widget_has_focus(SData->focus_widget),
+                                              gtk_widget_get_visible(SData->focus_widget));
+       g_print("[%s] [DEBUG] focus_widget size = %d x %d\n",
+        time_stamp(), gtk_widget_get_width(SData->focus_widget), gtk_widget_get_height(SData->focus_widget));
+    }
 
-    /* 4 Checkbox-Zeiger aus g_object user_data holen */
-                          //Hinweis: g_object_steal_data besser als g_object_get_data, zwecks Freigabe
-    GtkWidget *set1_check = GTK_WIDGET(g_object_steal_data(G_OBJECT(app), "check"));
-    if (!set1_check) return; // Fehlerbehandlung
-    /* 3.1 Checkbox-Wert in is_active speichern */
-    gboolean is_active = gtk_check_button_get_active(GTK_CHECK_BUTTON(set1_check));
-
-    /* 3.2 aufrufen von keep_window_on_top() wenn Checkbox=true */
-    if (is_active) {
-    /* 3 Timer um Fenster wieder in den Vordergrund zu holen, siehe keep_window_on_top() */
-    g_print ("[%s] window top is activated\n", time_stamp());
-    // old //fullscreen_timer_id = g_timeout_add_seconds(120, keep_window_on_top, fullscreen_window);
+    /* 9 Timer um Fenster wieder in den Vordergrund zu holen, siehe keep_window_on_top() */
+    if (g_cfg.keep_wot) {
+    g_print ("[%s] [INFO] window top is activated\n", time_stamp());
     SData->fullscreen_timer_id = g_timeout_add_seconds(KEEP_WIN_TOP_TIME, keep_window_on_top, SData); //SData übergeben
-
     }
 }
 
@@ -813,7 +863,7 @@ static void on_activate(AdwApplication *app, gpointer user_data)
     // orange=#db9c4a , lightred=#ff8484 , grey=#c0bfbc
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
-                            ".opaque.custom-suggested-action-button1 {" // Blackscreen-btn
+                            ".opaque.custom-suggested-action-button1 {" // Screensaver-btn
                                          "  background-color: #c0bfbc;" // Grau
                                                     "  color: #000000;"
                                                                     "}"
@@ -927,24 +977,25 @@ static void on_activate(AdwApplication *app, gpointer user_data)
 
     /* ----- Icon ---------------------------------------------------- */
     GtkWidget *icon = gtk_image_new_from_resource("/io/github/supertoq/oledsaver/icon2"); //alias in xml !
-    gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);                 // Icon horizontal zentrieren
+    gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);            // Icon horizontal zentrieren
     gtk_image_set_pixel_size(GTK_IMAGE(icon),  128);
-    gtk_widget_set_margin_top(GTK_WIDGET(icon), 10);               // Abstand zum Label1
+    gtk_widget_set_margin_top(GTK_WIDGET(icon), 10);          // Abstand zum Label1
 
-    /* ----- Checkbox "set1_check" ----------------------------------- */
-    GtkWidget *set1_check = gtk_check_button_new_with_label(_("Alle 2min auffrischen")); 
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(set1_check), FALSE); // standardmäßig auf inaktiv
-    gtk_widget_set_visible(GTK_WIDGET(set1_check), TRUE); // Checkbox Sichtbarkeit
+    /* ----- Checkbox "keep_check" ----------------------------------- */
+    GtkWidget *keep_check = gtk_check_button_new_with_label(_("Alle 2min auffrischen")); 
+    /* Schalter-Aktivierung abhängig von gesetzten g_cfg.-Wert: */
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(keep_check), g_cfg.keep_wot);
+    gtk_widget_set_visible(GTK_WIDGET(keep_check), TRUE);     // visible
+    gtk_widget_set_focusable(GTK_WIDGET(keep_check), FALSE);  // nicht fokusierbar (tap)         
+
 
     /* ----- Checkbox-BOX-Widget ------------------------------------- */
     GtkWidget *chbx_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
     gtk_widget_set_hexpand(chbx_box, FALSE);
     gtk_widget_set_halign(chbx_box, GTK_ALIGN_CENTER);
-    gtk_box_append(GTK_BOX(chbx_box), GTK_WIDGET(set1_check));
+    gtk_box_append(GTK_BOX(chbx_box), GTK_WIDGET(keep_check));
 
-    /* --- G_object, Checkbox an "app" speichern, um diese im Callback abrufen zu können --- */
-    g_object_set_data(G_OBJECT(app), "check", set1_check); // Freigeben anhand g_object_steal_data
-        // Hinweis "set1_check" wird in on_fullscr.btn.clicked abgerufen.
+    g_signal_connect(keep_check, "toggled", G_CALLBACK(on_keep_check_toggled), NULL);
 
     /* ----- Buttons-Box ---------------------------------------------- */
     GtkWidget *buttons_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
@@ -1029,8 +1080,9 @@ int main(int argc, char **argv)
     init_config();                                          // Config.c: Config File laden/erstellen
 
     /* 2.1 Config-Werte zum testen auslesen  */
-    if (g_cfg.adv_debug_opt) g_print("Loaded settings:\n mouse_move_limit=%d\n use_key=%d\n quit_key=%d\n start_in_fs=%d\n always_sys_ib=%d\n log_enable=%d\n",
-                         g_cfg.mouse_move_limit, g_cfg.use_key, g_cfg.quit_key, g_cfg.start_in_fs, g_cfg.always_sys_ib, g_cfg.log_enable);
+    if (g_cfg.adv_debug_opt) g_print(
+        "Setting values loaded:\n mouse_move_limit=%d\n use_key=%d\n keep_wot=%d\n quit_key=%d\n start_in_fs=%d\n sys_ib_off=%d\n log_enable=%d\n",
+                           g_cfg.mouse_move_limit, g_cfg.use_key, g_cfg.keep_wot, g_cfg.quit_key, g_cfg.start_in_fs, g_cfg.sys_ib_off, g_cfg.log_enable);
 
     /* 3. Externes Logging starten und APP_ID übermitteln */
     log_folder_init();                                      // Logfolder immer erstellen
