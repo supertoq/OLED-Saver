@@ -1,17 +1,20 @@
 <img src="packaging/io.github.supertoq.oledsaver.svg" height="128">
 
 # Basti's OLED Saver
-Basti's OLED Saver is a small tool that tries to prevent the device from standby, automatic suspending, screen blanking and screen locking. You can display a black fullscreen to protect the OLED from burn-in.
+Basti's OLED Saver is a screensaver tool that prevents the device from entering standby, automatic suspend, screen blanking, and screen locking. It can display a pure black fullscreen to protect OLED displays from burn-in.
+
 
 ![oledsaver main window](data/img/oledsaver_preview_img1.png?raw=true) 
   
 ![oledsaver settings page](data/img/oledsaver_preview_img2.png?raw=true) 
   
+It provides options to start directly in black screen mode and to close the application using the spacebar, allowing quick start and exit via a keyboard shortcut.  
+  
 This app was created at the request of good buddy.  
   
   
-## Installation:  
-The quickest way to install OLED Saver is to download the application from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
+## Installing:  
+The quickest way to get OLED Saver is to download the flatpak file from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
 Installation proceeds as follows:  
 ```
 cd ~/Downloads  
@@ -20,12 +23,11 @@ cd ~/Downloads
 flatpak install -y --user io.github.supertoq.oledsaver.flatpak  
 ```  
   
-You can also build the application yourself from the transparent source code; here’s one way using Flatpak Builder.
-
+You can also build the application yourself from the source code. One way to do this is using Flatpak Builder.
   
-## Building and Installing with Flatpak Builder.  
+## Building with Flatpak Builder.  
 
-### Preparation and Dev Depentencies:
+### Dependencies:
   
 #### Ubuntu/Debian  
 ```
@@ -42,19 +44,19 @@ sudo dnf install flatpak flatpak-builder
 sudo pacman -S flatpak flatpak-builder 
 ```  
 
-### Add Flathub repository: 
+### Add Flathub Repository: 
 ```
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 
 ```  
   
-### Within Flatpak, the `Gnome SDK 49` is required: 
+### Install the GNOME SDK 49: 
 ```
 flatpak install org.gnome.Sdk/x86_64/49
 ```  
   
-## Install OLED Saver:
+## Building the Flatpak File:
   
-### Clone repository:  
+### Clone Repository:  
 ```
 git clone https://github.com/supertoq/OLED-Saver.git 
 ```  
@@ -66,7 +68,7 @@ cd OLED-Saver
 flatpak-builder --user --install --force-clean _build-dir io.github.supertoq.oledsaver.yml 
 ```  
   
-## Run the OLED Saver:  
+### Running:  
 ```
 flatpak run io.github.supertoq.oledsaver 
 ```  
@@ -77,8 +79,6 @@ flatpak uninstall -y io.github.supertoq.oledsaver
 ```  
   
 > [!Note]  
-> This code is part of my learning project.  
-Use of the code and execution of the application is at your own risk; 
-I accept no liability!
+> Use of this code and running the application is at your own risk. I accept no liability.
   
 
