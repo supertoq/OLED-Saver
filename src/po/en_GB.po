@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: io.github.supertoq.oledsaver\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-19 10:41+0100\n"
+"POT-Creation-Date: 2026-01-29 14:34+0100\n"
 "PO-Revision-Date: 2025-12-11 13:44+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,96 +17,104 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:111
+#: main.c:123
 msgid "Standby wird nun verhindert!"
 msgstr "Standby is now prevented!"
 
-#: main.c:418
-msgid "Neustart erforderlich!"
-msgstr "App restart required"
+#: main.c:502
+msgid "Screensaver-Mode bei Neustart"
+msgstr "Screensaver mode on restart"
 
-#: main.c:442 main.c:573
+#: main.c:502
+msgid "Modus deaktiviert"
+msgstr "Mode disabled"
+
+#: main.c:516
+msgid "Neustart erforderlich!"
+msgstr "App Restart Required!"
+
+#: main.c:554 main.c:700
 msgid "Einstellungen"
 msgstr "Settings"
 
-#: main.c:458
-msgid "Präferenzoptionen"
-msgstr "Preference Options"
+#: main.c:570
+msgid "Screensaver-Modus"
+msgstr "Screensaver Mode"
 
-#: main.c:463
+#: main.c:575
 msgid "Debugging"
 msgstr "Debugging"
 
-#: main.c:468
-msgid "Minimalbewegungen zulassen"
-msgstr "Allow minimal movements"
+#: main.c:580
+msgid "Mausbewegung beendet Screensaver"
+msgstr "Mouse movement exits screensaver"
 
-#: main.c:470
+#: main.c:582
 msgid "Mausbewegungsschwelle in Pixeln"
 msgstr "Mouse movement threshold in pixels"
 
-#: main.c:492
+#: main.c:605
 msgid "Leertaste verwenden"
-msgstr "Use Spacebar"
+msgstr "Use spacebar"
 
-#: main.c:494
+#: main.c:607
 msgid ""
-"Verwende die Leertaste anstelle der Maus, um den Blackscreen-Modus zu beenden"
-msgstr "Use the Spacebar instead of the mouse to exit Black Screen mode"
+"Verwende die Leertaste anstelle der Maus, um den Screensaver zu schließen"
+msgstr ""
+"Use the Spacebar instead of the mouse move to exit Screensaver mode"
 
-#: main.c:502
-msgid "Im Fullscreen-Modus starten"
-msgstr "Start in fullscreen mode"
+#: main.c:615
+msgid "Anwendung beenden"
+msgstr "Quit Application"
 
-#: main.c:504
-msgid "App direkt im Fullscreen-Modus starten"
-msgstr "Start app directly in fullscreen mode"
+#: main.c:617
+msgid "Das Schließen des Screensavers, schließt auch die Anwendung"
+msgstr "Exiting the screensaver mode also quits the application"
 
-#: main.c:512
-msgid "In Gnome Desktop ..."
-msgstr "In Gnome Desktop ..."
+#: main.c:626
+msgid "Mit aktiven Screensaver starten"
+msgstr "Start App in Screensaver Mode"
 
-#: main.c:514
-msgid "Gnome-Inhibit und System-Inhibit verwenden"
-msgstr "Use Gnome Inhibit and System Inhibit"
+#: main.c:628
+msgid "Anwendung direkt mit aktiven Screensaver starten"
+msgstr "Start app directly in screensaver mode"
 
-#: main.c:521
+#: main.c:636
+msgid "System-Inhibit"
+msgstr "System Inhibit"
+
+#: main.c:638
+msgid "System-Inhibit in Gnome Desktop deaktivieren"
+msgstr "Disable system inhibit in Gnome Desktop"
+
+#: main.c:645
 msgid "Debug-Datei erstellen"
 msgstr "Create debug file"
 
-#: main.c:522
+#: main.c:646
 msgid "Protokollausgaben in eine Datei schreiben"
 msgstr "Write log output to file"
 
-#: main.c:811
+#: main.c:938
 msgid "Einstellungen         "
-msgstr "Settings            "
+msgstr "Settings           "
 
-#: main.c:812
+#: main.c:939
 msgid "Infos zu OLED Saver   "
 msgstr "About OLED Saver   "
 
-#: main.c:847
+#: main.c:974
 msgid "Blackscreen statt Burn-in! \n"
 msgstr "Black Screen instead of burn-in!\n"
 
-#: main.c:858
+#: main.c:985
 msgid "Alle 2min auffrischen"
 msgstr "Refresh every 2 minutes"
 
-#: main.c:878
+#: main.c:1006
 msgid "Blackscreen"
-msgstr "Black Screen"
+msgstr "Screensaver"
 
-#: main.c:887
+#: main.c:1014
 msgid "  Beenden  "
 msgstr "   Quit   "
-
-#~ msgid "Abbrechen"
-#~ msgstr "Cancel"
-
-#~ msgid "OK"
-#~ msgstr "OK"
-
-#~ msgid "Vollbild"
-#~ msgstr "Fullscreen"
