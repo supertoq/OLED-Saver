@@ -10,7 +10,7 @@
  * - save_config()
  * - config_cleanup()
  *
- * Version 2026-01-19
+ * Version 2026-01-29
  */
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -20,16 +20,17 @@
 /* ----- Globale Struktur um Konfigurations-Parameter zu kapseln ------------ */
 typedef struct {
     int      mouse_move_limit;             // Zahl zwischen 50 - 200
+    gboolean         keep_wot;             // kepp-window-on-top Option
     gboolean          use_key;             // Fullscreen per Leertaste beenden
     gboolean         quit_key;             // Leertaste schließt auch die Anwendung
     gboolean      start_in_fs;             // direkt im Fullscreen-Modus starten
-    gboolean    always_sys_ib;             // systemd-inhibit bei Gnome anwenden
+    gboolean       sys_ib_off;             // systemd-inhibit bei Gnome anwenden
     gboolean       log_enable;             // logging in Datei
     gboolean    adv_debug_opt;             // erweiterte Debug Optionen
 } FindConfig;
 extern FindConfig       g_cfg;             // Globale Instanz
 
-/* ----- Funktionen, die von außen aufgerufen werden ----------------------- */
+/* ----- Prototype, Funktionen, die von außen aufgerufen werden ------------- */
 void init_environment(void);               // Pfade ermitteln
 void init_config     (void);               // Datei anlegen / laden g_cfg befüllen
 void save_config     (void);               // g_cfg Datei schreiben
