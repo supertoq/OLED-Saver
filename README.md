@@ -8,19 +8,19 @@ Basti's OLED Saver is a screensaver tool that prevents the device from entering 
   
 ![oledsaver settings page](data/img/oledsaver_preview_img2.png?raw=true) 
   
-It provides options to start directly in black screen mode and to close the application using the spacebar, allowing quick start and exit via a keyboard shortcut.  
+It provides options to start directly in screensaver mode and to close the application using the spacebar, allowing quick start and exit via a keyboard shortcut.  
   
 This app was created at the request of good buddy.  
   
   
 ## Installing:  
-The quickest way to get OLED Saver is to download the flatpak file from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
+The quickest way to get Basti's OLED Saver is to download the flatpak file from the [Releases](https://github.com/supertoq/OLED-Saver/releases) page.  
 Installation proceeds as follows:  
 ```
 cd ~/Downloads  
 ```  
 ```
-flatpak install -y --user io.github.supertoq.oledsaver.flatpak  
+flatpak install -y --user io.github.supertoq.oledsaver.flatpak
 ```  
   
 You can also build the application yourself from the source code. One way to do this is using Flatpak Builder.
@@ -73,7 +73,7 @@ flatpak-builder --user --install --force-clean _build-dir io.github.supertoq.ole
 flatpak run io.github.supertoq.oledsaver 
 ```  
   
-## If you want to uninstall OLED Saver:  
+### If you want to uninstall OLED Saver:  
 ```
 flatpak uninstall -y io.github.supertoq.oledsaver 
 ```  
