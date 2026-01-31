@@ -15,7 +15,7 @@
   <icon type="stock">io.github.supertoq.oledsaver</icon>
   <!-- Beschreibung -->
   <description>
-    <p>Basti's OLED Saver is a small tool that tries to prevent the device from standby, automatic suspending, screen blanking and screen locking. You can display a black fullscreen to protect the OLED from burn-in.
+    <p>Basti's OLED Saver is a screensaver tool that prevents the device from entering standby, automatic suspend, screen blanking, and screen locking. It can display a pure black fullscreen to protect OLED displays from burn-in.
    </p>
   </description>
   <!-- Kategorien -->
@@ -37,7 +37,7 @@
   </screenshots> 
   <!-- Releases Information  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    -->
 <releases>
-  <release version="1.3.1" date="2026-01-29">
+  <release version="1.3.2" date="2026-01-31">
     <description>
       <p>This release includes improvements and fixes for a better user experience. </p>
       <ul>
