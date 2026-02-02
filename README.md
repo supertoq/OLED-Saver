@@ -36,12 +36,12 @@ sudo apt update && sudo apt install flatpak flatpak-builder
   
 #### Fedora  
 ```
-sudo dnf install flatpak flatpak-builder 
+sudo dnf upgrade && sudo dnf install flatpak flatpak-builder 
 ```  
   
 #### Arch
 ```
-sudo pacman -S flatpak flatpak-builder 
+sudo pacman -Syu && sudo pacman -S flatpak flatpak-builder 
 ```  
 
 ### Add Flathub Repository: 
@@ -73,7 +73,7 @@ flatpak-builder --user --install --force-clean _build-dir io.github.supertoq.ole
 flatpak run io.github.supertoq.oledsaver 
 ```  
   
-### If you want to uninstall OLED Saver:  
+#### If you want to uninstall:  
 ```
 flatpak uninstall -y io.github.supertoq.oledsaver 
 ```  
