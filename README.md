@@ -44,12 +44,12 @@ sudo dnf upgrade && sudo dnf install flatpak flatpak-builder
 sudo pacman -Syu && sudo pacman -S flatpak flatpak-builder 
 ```  
 
-### Add Flathub Repository 
+### Add Flathub Repository: 
 ```
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 
 ```  
   
-### Install the GNOME SDK 49 
+### Install the GNOME SDK 49: 
 ```
 flatpak install org.gnome.Sdk/x86_64/49
 ```  
@@ -68,12 +68,12 @@ cd OLED-Saver
 flatpak-builder --user --install --force-clean _build-dir io.github.supertoq.oledsaver.yml 
 ```  
   
-### Running  
+## Running  
 ```
 flatpak run io.github.supertoq.oledsaver 
 ```  
   
-#### If you want to uninstall:  
+### If you want to uninstall:  
 ```
 flatpak uninstall -y io.github.supertoq.oledsaver 
 ```  
