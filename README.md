@@ -25,7 +25,7 @@ flatpak install -y --user io.github.supertoq.oledsaver.flatpak
   
 You can also build the application yourself from the source code. One way to do this is using Flatpak Builder.
   
-## Building with Flatpak Builder.  
+## Building with Flatpak Builder  
 
 ### Dependencies:
   
