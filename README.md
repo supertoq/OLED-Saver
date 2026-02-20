@@ -31,17 +31,17 @@ You can also build the application yourself from the source code. One way to do 
   
 #### Ubuntu/Debian  
 ```
-sudo apt update && sudo apt install flatpak flatpak-builder
+sudo apt update && sudo apt install flatpak flatpak-builder fuse
 ```  
   
 #### Fedora  
 ```
-sudo dnf upgrade && sudo dnf install flatpak flatpak-builder 
+sudo dnf upgrade && sudo dnf install flatpak flatpak-builder fuse
 ```  
   
 #### Arch
 ```
-sudo pacman -Syu && sudo pacman -S flatpak flatpak-builder 
+sudo pacman -Syu && sudo pacman -S flatpak flatpak-builder fuse
 ```  
 
 ### Add Flathub Repository: 
